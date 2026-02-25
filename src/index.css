@@ -1,13 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+﻿@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@300;400;500;600;700&display=swap");
 @import "tailwindcss";
 
-@theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", sans-serif;
+@layer theme {
+  :root {
+    --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --font-display: "Space Grotesk", sans-serif;
+  }
 }
 
 @layer base {
-  body {
-    @apply bg-zinc-950 text-slate-100 font-sans antialiased;
+  html,
+  body,
+  #root {
+    @apply w-full min-h-screen;
   }
+
+  body {
+    @apply bg-zinc-950 text-slate-100 font-sans antialiased overflow-x-hidden;
+  }
+}
+
+@font-face {
+  font-family: "Fatal Fighter";
+  src: url("./assets/fonts/FatalFighter.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Fatal Fighter";
+  src: url("./assets/fonts/FatalFighter.ttf") format("truetype");
+  font-weight: 400;
+  font-style: italic;
+  font-display: swap;
 }

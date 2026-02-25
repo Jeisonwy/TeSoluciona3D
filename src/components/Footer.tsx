@@ -6,7 +6,10 @@ export default function Footer() {
       <div className="max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-8">
         <div className="flex items-center gap-2">
           <Printer className="text-rose-500 w-6 h-6" />
-          <span className="text-lg font-black italic tracking-tighter text-white">
+          <span
+            className="font-brand text-lg sm:text-xl tracking-[0.06em] leading-none uppercase"
+            style={{ fontFamily: '"Fatal Fighter", system-ui, sans-serif' }}
+          >
             TESOLUCIONA3D
           </span>
         </div>

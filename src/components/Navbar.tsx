@@ -24,10 +24,8 @@ export default function Navbar() {
       if (!ticking.current) {
         window.requestAnimationFrame(() => {
           if (currentScroll > lastScrollY.current && currentScroll > 100) {
-            // Scroll hacia abajo
             setShowNavbar(false);
           } else {
-            // Scroll hacia arriba
             setShowNavbar(true);
           }
 
@@ -47,12 +45,11 @@ export default function Navbar() {
     { label: "Inicio", href: "#" },
     { label: "Nosotros", href: "#nosotros" },
     { label: "Servicios", href: "#servicios" },
-    { label: "Productos", href: "#productos" },
+    { label: "Productos", href: "#products" },
   ];
 
   return (
     <>
-      {/* NAVBAR */}
       <nav
         className={`fixed top-0 left-0 w-full z-50 border-b border-white/5 bg-zinc-950/70 backdrop-blur-md transition-all duration-300 ${
           showNavbar
@@ -60,23 +57,26 @@ export default function Navbar() {
             : "-translate-y-full opacity-0"
         }`}
       >
-        <div className="max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+        <div className="max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3">
           <button
             type="button"
             onClick={() => setOpen(true)}
-            className="md:hidden inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-full shadow border border-white/10"
+            className="md:hidden inline-flex items-center gap-2 bg-white/10 hover:bg-white/15 text-white px-3 py-2 rounded-full shadow border border-white/10 text-sm"
           >
             <Menu size={18} />
             Menú
           </button>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <img
-              src="/src/img/favicon.png"
+              src="https://www.appsheet.com/template/gettablefileurl?appName=Imagenes-811224222&tableName=Imagenes&fileName=Imagenes_Images%2FEs5AvbwsBmmAVF8NRIadZS.Img.075115.png"
               alt="Logo TESOLUCIONA 3D"
-              className="w-12 h-12"
+              className="w-9 h-9 sm:w-12 sm:h-12 shrink-0"
             />
-            <span className="text-2xl font-black italic tracking-tighter text-white">
+            <span
+              className="font-brand text-lg sm:text-xl tracking-[0.06em] leading-none uppercase"
+              style={{ fontFamily: '"Fatal Fighter", system-ui, sans-serif' }}
+            >
               TESOLUCIONA 3D
             </span>
           </div>
@@ -97,14 +97,15 @@ export default function Navbar() {
 
       {!showNavbar && (
         <button
+          type="button"
           onClick={() => setShowNavbar(true)}
-          className="fixed top-6 right-6 z-[60] bg-white/10 hover:bg-white/15 text-white px-4 py-2 rounded-full shadow-xl border border-white/10 backdrop-blur-md transition-all duration-300"
+          className="fixed top-4 right-4 sm:top-6 sm:right-6 z-[60] bg-white/10 hover:bg-white/15 text-white p-2.5 sm:px-4 sm:py-2 rounded-full shadow-xl border border-white/10 backdrop-blur-md transition-all duration-300"
+          aria-label="Mostrar menú"
         >
           <Menu size={18} />
         </button>
       )}
 
-      {/* OVERLAY MOBILE */}
       <div
         className={`md:hidden fixed inset-0 z-[70] transition-opacity duration-300 ${
           open
@@ -124,14 +125,14 @@ export default function Navbar() {
             open ? "translate-x-0" : "translate-x-full"
           }`}
         >
-          <div className="h-20 px-5 flex items-center justify-between border-b border-white/10">
-            <div className="flex items-center gap-3">
+          <div className="h-16 sm:h-20 px-4 sm:px-5 flex items-center justify-between border-b border-white/10">
+            <div className="flex items-center gap-3 min-w-0">
               <img
-                src="/src/img/favicon.png"
+                src="https://www.appsheet.com/template/gettablefileurl?appName=Imagenes-811224222&tableName=Imagenes&fileName=Imagenes_Images%2FEs5AvbwsBmmAVF8NRIadZS.Img.075115.png"
                 alt="Logo TESOLUCIONA 3D"
-                className="w-10 h-10"
+                className="w-9 h-9 sm:w-10 sm:h-10 shrink-0"
               />
-              <span className="text-lg font-black italic tracking-tighter text-white">
+              <span className="text-sm sm:text-lg font-black italic tracking-tighter text-white truncate">
                 TESOLUCIONA 3D
               </span>
             </div>
@@ -140,6 +141,7 @@ export default function Navbar() {
               type="button"
               onClick={() => setOpen(false)}
               className="p-2 rounded-xl hover:bg-white/10 text-white"
+              aria-label="Cerrar"
             >
               <X size={20} />
             </button>
@@ -172,7 +174,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      <div className="h-20" />
+      <div className="h-16 sm:h-20" />
     </>
   );
 }
