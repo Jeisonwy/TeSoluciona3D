@@ -31,9 +31,9 @@ type SortMode =
 
 type Props = {
   endpoint?: string;
-  onlyActive?: boolean; // default true
-  oncePerSession?: boolean; // default true
-  autoPlayMs?: number; // default 3500
+  onlyActive?: boolean;
+  oncePerSession?: boolean;
+  autoPlayMs?: number;
 };
 
 const DEFAULT_ENDPOINT =
@@ -90,7 +90,7 @@ export default function Promotions({
   const [query, setQuery] = useState("");
   const [eventType, setEventType] = useState<string>("all");
   const [sort, setSort] = useState<SortMode>("relevance");
-
+  const [showFilters, setShowFilters] = useState(false);
   // Dropdown custom
   const [isEventOpen, setIsEventOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
@@ -103,6 +103,11 @@ export default function Promotions({
   // Modal principal
   const [isMainModalOpen, setIsMainModalOpen] = useState(false);
   const [mainPromoId, setMainPromoId] = useState<string | null>(null);
+
+  const globalMainPromo = useMemo(
+    () => promotions.find((p) => p.showMainPromotion),
+    [promotions],
+  );
 
   // Carrusel Desktop
   const prefersReducedMotion = usePrefersReducedMotion();
@@ -198,7 +203,7 @@ export default function Promotions({
     eventType === "all" ? "Todos los eventos" : eventType;
 
   const sortOptions: { value: SortMode; label: string }[] = [
-    { value: "relevance", label: "Orden: backend" },
+    { value: "relevance", label: "Orden: Normal" },
     { value: "name_asc", label: "Nombre (A-Z)" },
     { value: "discount_desc", label: "Mayor descuento" },
     { value: "price_asc", label: "Precio (menor → mayor)" },
@@ -320,7 +325,6 @@ export default function Promotions({
     setActiveIndex((i) => (i + 1) % filtered.length);
   };
 
-  // Función global para abrir modal de promo
   const handleOpenPromo = (p: Promotion) => {
     setMainPromoId(p.id);
     setIsMainModalOpen(true);
@@ -333,77 +337,117 @@ export default function Promotions({
       className="relative max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8"
       id="promotions"
     >
-      {/* Header / Controles */}
-      <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
+      {/* Header / Título / Toggle */}
+      <div className="flex items-center justify-between gap-6 flex-wrap mb-2">
         <div>
-          <h2 className="text-xl font-semibold">Promociones</h2>
-          <p className="text-sm opacity-70">
+          <h2 className="text-3xl sm:text-4xl font-extrabold tracking-tight">
+            Promociones
+          </h2>
+          <p className="text-sm opacity-70 mt-1">
             {loading ? "Cargando..." : `${filtered.length} resultado(s)`}
           </p>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 sm:items-center w-full sm:w-auto">
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar promo..."
-            className="w-full sm:w-64 rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 outline-none"
-          />
+        <button
+          onClick={() => {
+            setShowFilters(!showFilters);
+            setIsEventOpen(false);
+            setIsSortOpen(false);
+          }}
+          className="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-xl border border-black/10 dark:border-white/10 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+        >
+          {showFilters ? "Ocultar filtros" : "Mostrar filtros"}
+          <span
+            className={`transition-transform duration-300 ${
+              showFilters ? "rotate-180" : "rotate-0"
+            }`}
+          >
+            ▼
+          </span>
+        </button>
+      </div>
 
-          <div className="relative w-full sm:w-48">
-            <button
-              type="button"
-              onClick={() => setIsEventOpen((prev) => !prev)}
-              className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 text-left shadow-sm flex items-center justify-between outline-none"
-            >
-              <span className="truncate">{selectedEventLabel}</span>
-              <span className="opacity-60 text-sm">▼</span>
-            </button>
-            {isEventOpen && (
-              <div className="absolute z-50 mt-2 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0b1220]/80 backdrop-blur-md shadow-lg overflow-hidden">
-                {eventOptions.map((ev) => (
-                  <button
-                    key={ev}
-                    type="button"
-                    onClick={() => {
-                      setEventType(ev);
-                      setIsEventOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-left hover:bg-black/10 dark:hover:bg-white/10 transition ${ev === eventType ? "bg-black/10 dark:bg-white/15" : ""}`}
-                  >
-                    {ev === "all" ? "Todos los eventos" : ev}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
+      {/* Contenedor de Filtros con animación Grid */}
+      <div
+        className={`grid transition-all duration-500 ease-in-out ${
+          showFilters
+            ? "grid-rows-[1fr] opacity-100 mb-6"
+            : "grid-rows-[0fr] opacity-0 mb-0"
+        } ${isEventOpen || isSortOpen ? "overflow-visible" : "overflow-hidden"}`}
+      >
+        <div className="min-h-0">
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center w-full pt-2">
+            {/* 1. Input de Búsqueda */}
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar promo..."
+              className="w-full sm:w-64 rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 outline-none transition-shadow focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
+            />
 
-          <div className="relative w-full sm:w-48">
-            <button
-              type="button"
-              onClick={() => setIsSortOpen((prev) => !prev)}
-              className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 text-left shadow-sm flex items-center justify-between outline-none"
-            >
-              <span className="truncate">{selectedSortLabel}</span>
-              <span className="opacity-60 text-sm">▼</span>
-            </button>
-            {isSortOpen && (
-              <div className="absolute z-50 mt-2 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0b1220]/80 backdrop-blur-md shadow-lg overflow-hidden">
-                {sortOptions.map((opt) => (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    onClick={() => {
-                      setSort(opt.value);
-                      setIsSortOpen(false);
-                    }}
-                    className={`w-full px-3 py-2 text-left hover:bg-black/10 dark:hover:bg-white/10 transition ${opt.value === sort ? "bg-black/10 dark:bg-white/15" : ""}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
+            {/* 2. Dropdown de Eventos */}
+            <div className="relative w-full sm:w-48">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEventOpen((prev) => !prev);
+                  setIsSortOpen(false);
+                }}
+                className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 text-left shadow-sm flex items-center justify-between outline-none"
+              >
+                <span className="truncate">{selectedEventLabel}</span>
+                <span className="opacity-60 text-sm">▼</span>
+              </button>
+              {isEventOpen && (
+                <div className="absolute z-50 mt-2 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0b1220]/80 backdrop-blur-md shadow-lg overflow-hidden">
+                  {eventOptions.map((ev) => (
+                    <button
+                      key={ev}
+                      type="button"
+                      onClick={() => {
+                        setEventType(ev);
+                        setIsEventOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left hover:bg-black/10 dark:hover:bg-white/10 transition ${ev === eventType ? "bg-black/10 dark:bg-white/15" : ""}`}
+                    >
+                      {ev === "all" ? "Todos los eventos" : ev}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* 3. Dropdown de Orden */}
+            <div className="relative w-full sm:w-48">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSortOpen((prev) => !prev);
+                  setIsEventOpen(false);
+                }}
+                className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 text-left shadow-sm flex items-center justify-between outline-none"
+              >
+                <span className="truncate">{selectedSortLabel}</span>
+                <span className="opacity-60 text-sm">▼</span>
+              </button>
+              {isSortOpen && (
+                <div className="absolute z-50 mt-2 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0b1220]/80 backdrop-blur-md shadow-lg overflow-hidden">
+                  {sortOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => {
+                        setSort(opt.value);
+                        setIsSortOpen(false);
+                      }}
+                      className={`w-full px-3 py-2 text-left hover:bg-black/10 dark:hover:bg-white/10 transition ${opt.value === sort ? "bg-black/10 dark:bg-white/15" : ""}`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -438,10 +482,9 @@ export default function Promotions({
 
         {!loading && !error && filtered.length > 0 && (
           <>
-            {/* ====== VISTA MÓVIL (Touch / Swipe Nativo) ====== */}
+            {/* ====== VISTA MÓVIL (Scroll horizontal) ====== */}
             <div
               className="block md:hidden relative mt-4"
-              // Pausar si el usuario toca la pantalla para leer o deslizar
               onTouchStart={() => setIsPaused(true)}
               onTouchEnd={() => setIsPaused(false)}
             >
@@ -458,7 +501,6 @@ export default function Promotions({
                 ))}
               </div>
 
-              {/* Indicador de Deslizar */}
               <div className="text-center text-xs opacity-50 mt-[-10px] pb-4">
                 Desliza para ver más →
               </div>
@@ -510,7 +552,6 @@ export default function Promotions({
                 />
               </div>
 
-              {/* Dots Desktop */}
               <div className="flex flex-col items-center gap-2 mt-2">
                 <div className="flex items-center gap-1.5 overflow-auto max-w-full px-4 py-1">
                   {filtered.slice(0, 30).map((_, i) => (
@@ -527,8 +568,9 @@ export default function Promotions({
           </>
         )}
       </div>
-
-      {/* Modal Principal (Mantenido intacto) */}
+      {globalMainPromo && !isMainModalOpen && (
+        <MainPromoFAB onClick={() => handleOpenPromo(globalMainPromo)} />
+      )}
       {isMainModalOpen && mainPromotion && (
         <MainPromotionModal
           promo={mainPromotion}
@@ -546,6 +588,31 @@ export default function Promotions({
 // ==============================================
 // SUB-COMPONENTES
 // ==============================================
+
+function MainPromoFAB({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="fixed bottom-6 left-4 sm:left-8 z-[90] animate-bounce hover:scale-110 transition-transform focus:outline-none"
+      aria-label="Ver Promoción Principal"
+    >
+      <div className="relative flex items-center justify-center w-20 h-20 sm:w-24 sm:h-24 text-white font-black drop-shadow-2xl">
+        <svg
+          viewBox="0 0 100 100"
+          className="absolute inset-0 w-full h-full text-red-600 fill-current drop-shadow-lg"
+        >
+          <path d="M50 0 L58 15 L74 11 L75 27 L90 32 L81 46 L94 58 L78 65 L81 81 L65 76 L55 90 L42 81 L26 89 L25 73 L9 70 L20 56 L6 43 L22 36 L19 20 L35 25 L44 10 Z" />
+        </svg>
+        <span className="relative z-10 text-center leading-[1.1] tracking-tighter text-[13px] sm:text-[15px] origin-center rotate-[-12deg] shadow-black drop-shadow-md">
+          ¡OFERTA
+          <br />
+          ESTRELLA!
+        </span>
+      </div>
+    </button>
+  );
+}
 
 function MobilePromotionCard({
   promo: p,
@@ -608,22 +675,37 @@ function CarouselTrack<T>({
   const cardW = 280;
   const gap = 20;
 
+  const isLoopable = items.length > 1;
+  const extendedItems = isLoopable
+    ? [...items, ...items, ...items, ...items, ...items]
+    : items;
+
+  const realActiveIndex = isLoopable
+    ? activeIndex + items.length * 2
+    : activeIndex;
+
   return (
     <div
       className="flex items-stretch will-change-transform transition-transform duration-700 ease-[cubic-bezier(0.34,1.56,0.64,1)] w-full"
       style={{
-        transform: `translateX(calc(50% - ${activeIndex * (cardW + gap) + cardW / 2}px))`,
+        transform: `translateX(calc(50% - ${
+          realActiveIndex * (cardW + gap) + cardW / 2
+        }px))`,
       }}
     >
-      {items.map((it, idx) => (
-        <div
-          key={idx}
-          className="shrink-0 transition-all duration-700"
-          style={{ width: `${cardW}px`, marginRight: `${gap}px` }}
-        >
-          {renderItem(it, idx === activeIndex)}
-        </div>
-      ))}
+      {extendedItems.map((it, idx) => {
+        const isActive = idx === realActiveIndex;
+
+        return (
+          <div
+            key={idx}
+            className="shrink-0 transition-all duration-700"
+            style={{ width: `${cardW}px`, marginRight: `${gap}px` }}
+          >
+            {renderItem(it, isActive)}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -715,42 +797,84 @@ function MainPromotionModal({
   const hasDiscount = clampDiscount(promo.discount) > 0;
   const finalPrice = discountedPrice(promo.cost, promo.discount);
 
+  const isSpecial = promo.showMainPromotion;
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsAnimating(true), 10);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const handleClose = () => {
+    setIsAnimating(false);
+    setTimeout(onClose, 300);
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") handleClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
-    <div className="fixed inset-0 z-[9999]">
-      {/* Overlay */}
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 mt-10 sm:mt-0">
       <button
         type="button"
         aria-label="Cerrar promoción"
-        onClick={onClose}
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={handleClose}
+        className={`absolute inset-0 bg-black/60 backdrop-blur-md transition-opacity duration-300 ease-out ${
+          isAnimating ? "opacity-100" : "opacity-0"
+        }`}
       />
 
-      {/* Card */}
-      <div className="relative mx-auto mt-10 w-[92%] max-w-3xl">
+      <div
+        className={`relative w-full max-w-3xl transition-all duration-300 ease-out transform ${
+          isAnimating
+            ? "opacity-100 translate-y-0 scale-100"
+            : "opacity-0 translate-y-8 scale-95"
+        }`}
+      >
+        {/* Badge Especial flotando arriba (Ahora sí es libre de salirse) */}
+        {isSpecial && (
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
+            <span className="bg-gradient-to-r from-red-600 to-orange-500 text-white text-[10px] sm:text-xs font-black px-4 sm:px-6 py-1.5 rounded-full shadow-lg uppercase tracking-widest border-2 border-white dark:border-[#0b1220] whitespace-nowrap">
+              🔥 Oferta Estrella 🔥
+            </span>
+          </div>
+        )}
+
+        {/* 2. CAJA INTERIOR VISIBLE: Maneja el fondo, bordes y el scroll interno */}
         <div
-          className="
-            rounded-3xl overflow-hidden
-            border border-white/15
-            bg-white/80 dark:bg-[#0b1220]/80
-            backdrop-blur-md
-            shadow-2xl
-          "
+          className={`w-full max-h-[85vh] overflow-y-auto rounded-3xl border shadow-2xl custom-scrollbar ${
+            isSpecial
+              ? "border-red-500/50 bg-gradient-to-br from-white via-white to-red-50 dark:from-[#0b1220] dark:via-[#0b1220] dark:to-red-900/20 shadow-[0_0_40px_rgba(239,68,68,0.25)]"
+              : "border-white/15 bg-white/90 dark:bg-[#0b1220]/90 backdrop-blur-xl"
+          }`}
         >
-          <div className="flex items-start justify-between gap-3 p-5">
+          <div
+            className={`flex items-start justify-between gap-3 p-5 ${isSpecial ? "pt-7" : ""}`}
+          >
             <div>
-              <div className="text-xs opacity-70">{promo.TypeOfEvent}</div>
-              <h3 className="text-xl font-semibold leading-tight">
+              <div
+                className={`text-xs font-medium ${isSpecial ? "text-red-500 dark:text-red-400" : "opacity-70"}`}
+              >
+                {promo.TypeOfEvent}
+              </div>
+              <h3
+                className={`text-xl font-bold leading-tight mt-1 ${isSpecial ? "text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600 dark:from-red-400 dark:to-orange-400" : ""}`}
+              >
                 {promo.productName}
               </h3>
               <div className="text-xs opacity-70 mt-1">
                 {promo.category} • {promo.timeToDelivery}
               </div>
             </div>
-
             <button
               type="button"
-              onClick={onClose}
-              className="rounded-xl px-3 py-2 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition"
+              onClick={handleClose}
+              className="rounded-full bg-black/5 dark:bg-white/5 px-3 py-2 hover:bg-black/10 dark:hover:bg-white/10 transition"
               aria-label="Cerrar"
             >
               ✕
@@ -758,8 +882,7 @@ function MainPromotionModal({
           </div>
 
           <div className="grid md:grid-cols-2 gap-0">
-            {/* Imagen */}
-            <div className="bg-black/5 dark:bg-white/5">
+            <div className="bg-black/5 dark:bg-white/5 relative">
               <div className="relative aspect-[4/3] w-full">
                 {activeImg ? (
                   <img
@@ -773,15 +896,13 @@ function MainPromotionModal({
                     Sin imagen
                   </div>
                 )}
-
                 {hasDiscount && (
-                  <div className="absolute left-4 top-4 rounded-full bg-black/70 text-white text-xs px-3 py-1">
+                  <div className="absolute left-4 top-4 rounded-full bg-red-600 text-white font-bold text-sm px-3 py-1 shadow-lg">
                     -{clampDiscount(promo.discount)}%
                   </div>
                 )}
               </div>
 
-              {/* Miniaturas */}
               {imgs.length > 1 && (
                 <div className="flex gap-2 p-3">
                   {imgs.map((url) => (
@@ -789,12 +910,13 @@ function MainPromotionModal({
                       type="button"
                       key={url}
                       onClick={() => onSelectImg(url)}
-                      className={`h-12 w-12 rounded-xl overflow-hidden border ${
+                      className={`h-12 w-12 rounded-xl overflow-hidden border transition-all ${
                         url === activeImg
-                          ? "border-black/30 dark:border-white/30"
-                          : "border-black/10 dark:border-white/10 opacity-80"
+                          ? isSpecial
+                            ? "border-red-500 ring-2 ring-red-500/30 scale-105"
+                            : "border-black/50 dark:border-white/50"
+                          : "border-black/10 dark:border-white/10 opacity-70 hover:opacity-100"
                       }`}
-                      title="Ver imagen"
                     >
                       <img
                         src={url}
@@ -808,18 +930,21 @@ function MainPromotionModal({
               )}
             </div>
 
-            {/* Detalle */}
-            <div className="p-5">
-              <p className="text-sm opacity-85">{promo.description}</p>
+            <div className="p-5 flex flex-col">
+              <p className="text-sm opacity-85 flex-1">{promo.description}</p>
 
-              <div className="mt-5 rounded-2xl border border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5 p-4">
+              <div
+                className={`mt-5 rounded-2xl border p-4 ${isSpecial ? "bg-red-500/5 border-red-500/20 dark:bg-red-500/10" : "border-black/10 dark:border-white/10 bg-white/60 dark:bg-white/5"}`}
+              >
                 <div className="text-sm opacity-70">Precio promocional</div>
                 <div className="flex items-baseline gap-3 mt-1">
-                  <div className="text-2xl font-semibold">
+                  <div
+                    className={`text-3xl font-black ${isSpecial ? "text-red-600 dark:text-red-400" : ""}`}
+                  >
                     {formatCOP(finalPrice)}
                   </div>
                   {hasDiscount && (
-                    <div className="text-sm line-through opacity-50">
+                    <div className="text-sm line-through opacity-50 font-medium">
                       {formatCOP(promo.cost)}
                     </div>
                   )}
@@ -829,32 +954,32 @@ function MainPromotionModal({
               <div className="mt-5 flex flex-col sm:flex-row gap-2">
                 <button
                   type="button"
-                  className="rounded-xl px-4 py-3 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition w-full"
+                  className={`rounded-xl px-4 py-3 transition w-full active:scale-95 font-semibold ${
+                    isSpecial
+                      ? "bg-gradient-to-r from-red-600 to-orange-500 text-white shadow-lg shadow-red-500/30 hover:shadow-red-500/50 border-none"
+                      : "border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20"
+                  }`}
                   onClick={() =>
                     alert(`Interés en promo: ${promo.productName}`)
                   }
                 >
-                  Me interesa
+                  ¡Lo quiero!
                 </button>
                 <button
                   type="button"
-                  className="rounded-xl px-4 py-3 bg-black text-white dark:bg-white dark:text-black transition w-full"
-                  onClick={onClose}
+                  className={`rounded-xl px-4 py-3 transition w-full active:scale-95 font-medium ${
+                    isSpecial
+                      ? "border border-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/10"
+                      : "bg-black text-white dark:bg-white dark:text-black hover:scale-[1.02]"
+                  }`}
+                  onClick={handleClose}
                 >
                   Cerrar
                 </button>
               </div>
-
-              {promo.showMainPromotion && (
-                <div className="text-[11px] opacity-60 mt-4">
-                  *Esta promoción está marcada como <b>showMainPromotion</b>.
-                </div>
-              )}
             </div>
           </div>
         </div>
-
-        <div className="h-6" />
       </div>
     </div>
   );

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 type ApiResponse = {
   success: boolean;
@@ -13,7 +14,7 @@ export type Product = {
   cost: number;
   category: string;
   status: "Activo" | "Inactivo" | string;
-  discount: number; // porcentaje 0-100
+  discount: number;
   timeToDelivery: string;
   img1?: string;
   img2?: string;
@@ -23,12 +24,12 @@ type ViewMode = "grid" | "list";
 type SortMode = "relevance" | "name_asc" | "price_asc" | "price_desc";
 
 type Props = {
-  endpoint?: string; // por si luego lo cambias
-  onlyActive?: boolean; // default true
-  pageSize?: number; // default 24 (paginación simple en front)
+  endpoint?: string;
+  onlyActive?: boolean;
+  pageSize?: number;
 };
 const sortOptions: { value: SortMode; label: string }[] = [
-  { value: "relevance", label: "Orden: backend" },
+  { value: "relevance", label: "Orden: Normal" },
   { value: "name_asc", label: "Nombre (A-Z)" },
   { value: "price_asc", label: "Precio (menor → mayor)" },
   { value: "price_desc", label: "Precio (mayor → menor)" },
@@ -37,7 +38,6 @@ const DEFAULT_ENDPOINT =
   "https://script.google.com/macros/s/AKfycbz4qsIjQzuk64K4l9IlZ_qcA0pZVXge5mo7FfJB7gh0F4R5d3qks_Vphe0kcRVLYSQdaA/exec?action=products";
 
 function formatCOP(value: number) {
-  // COP normalmente no usa decimales
   return new Intl.NumberFormat("es-CO", {
     style: "currency",
     currency: "COP",
@@ -75,7 +75,6 @@ export default function Products({
   const [page, setPage] = useState(1);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
-  // Para manejar imagen seleccionada por producto
   const [activeImgById, setActiveImgById] = useState<Record<string, string>>(
     {},
   );
@@ -83,12 +82,33 @@ export default function Products({
   useEffect(() => {
     let alive = true;
 
+    const CACHE_KEY = `products_cache_${endpoint}`;
+
     async function run() {
       try {
         setLoading(true);
         setError(null);
 
-        // Nota: NO uses mode:"no-cors" porque te devuelve respuesta opaca y no podrás leer JSON.
+        const cachedData = sessionStorage.getItem(CACHE_KEY);
+
+        if (cachedData) {
+          const parsedCache = JSON.parse(cachedData) as Product[];
+
+          if (!alive) return;
+
+          setProducts(parsedCache);
+
+          const firstImgs: Record<string, string> = {};
+          for (const p of parsedCache) {
+            const imgs = getImages(p);
+            if (imgs[0]) firstImgs[p.id] = imgs[0];
+          }
+          setActiveImgById(firstImgs);
+          setLoading(false);
+
+          return;
+        }
+
         const res = await fetch(endpoint, {
           method: "GET",
           headers: { Accept: "application/json" },
@@ -118,7 +138,8 @@ export default function Products({
 
         setProducts(normalized);
 
-        // Setear imagen activa por defecto (img1 si existe)
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
+
         const firstImgs: Record<string, string> = {};
         for (const p of normalized) {
           const imgs = getImages(p);
@@ -197,7 +218,6 @@ export default function Products({
         break;
       case "relevance":
       default:
-        // “relevance” = deja el orden del backend
         break;
     }
 
@@ -213,7 +233,6 @@ export default function Products({
   }, [filtered, currentPage, pageSize]);
 
   useEffect(() => {
-    // si cambian filtros, vuelve a página 1
     setPage(1);
   }, [query, category, sort, pageSize]);
 
@@ -476,6 +495,8 @@ function ProductCard({
   activeImg?: string;
   onSelectImg: (url: string) => void;
 }) {
+  const navigate = useNavigate();
+
   const imgs = getImages(p);
   const hasDiscount = clampDiscount(p.discount) > 0;
   const finalPrice = discountedPrice(p.cost, p.discount);
@@ -576,9 +597,7 @@ function ProductCard({
               type="button"
               className="rounded-xl px-4 py-2 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition"
               onClick={() => {
-                // Aquí luego conectas WhatsApp / modal / carrito / etc.
-                // Ej: window.open(`https://wa.me/57XXXXXXXXXX?text=${encodeURIComponent(...)}`)
-                alert(`Interés en: ${p.productName}`);
+                navigate(`/producto/${p.id}`, { state: { product: p } });
               }}
             >
               Me interesa

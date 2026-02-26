@@ -32,11 +32,7 @@ export default function Services() {
   ];
   return (
     <section id="servicios" className="relative w-full overflow-hidden py-16">
-      {/* ✅ AQUÍ ESTÁ LA MAGIA: 
-        Usamos exactamente las mismas clases de contenedor que en InstagramFeed
-      */}
       <div className="relative z-10 max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Cabecera de la sección */}
         <div className="flex items-end justify-between gap-6 flex-wrap mb-10">
           <div>
             <p className="text-xs uppercase tracking-[0.22em] text-amber-400 font-semibold mb-2">
@@ -55,7 +51,7 @@ export default function Services() {
           </div>
 
           <a
-            href="#contacto"
+            href="http://wa.me/573177248656"
             className="inline-flex items-center gap-2 bg-zinc-900/50 hover:bg-zinc-800 text-white px-6 py-3 rounded-full text-sm font-bold transition-all border border-white/10 backdrop-blur-sm shadow-lg"
           >
             Cotizar ahora <ArrowRight size={16} />
@@ -71,7 +67,6 @@ export default function Services() {
                 key={s.title}
                 className="group relative overflow-hidden rounded-3xl border border-white/10 bg-zinc-900/40 backdrop-blur-md shadow-2xl flex flex-col h-full"
               >
-                {/* Imagen Header */}
                 <div className="relative h-[280px] sm:h-[340px] overflow-hidden shrink-0">
                   <img
                     src={s.image}
@@ -81,15 +76,12 @@ export default function Services() {
                     referrerPolicy="no-referrer"
                   />
 
-                  {/* Gradiente para oscurecer la imagen abajo y arriba */}
                   <div className="absolute inset-0 pointer-events-none bg-gradient-to-t from-zinc-950 via-zinc-950/20 to-zinc-950/60" />
 
-                  {/* Glow detrás de la imagen (animado al hover) */}
                   <div
                     className={`absolute inset-0 pointer-events-none opacity-0 group-hover:opacity-40 transition-opacity duration-500 bg-gradient-to-tr ${s.accent} mix-blend-overlay`}
                   />
 
-                  {/* Badge de Servicio */}
                   <div className="absolute top-5 left-5 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 border border-white/10 backdrop-blur-md">
                     <span className="w-7 h-7 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
                       <Icon className="w-4 h-4 text-white" />
@@ -100,7 +92,6 @@ export default function Services() {
                   </div>
                 </div>
 
-                {/* Contenido Card */}
                 <div className="p-6 md:p-8 flex flex-col flex-grow bg-zinc-950/50">
                   <h3 className="text-2xl font-black italic tracking-tight text-white uppercase mb-3 group-hover:text-amber-400 transition-colors">
                     {s.title}
@@ -121,7 +112,6 @@ export default function Services() {
                   </a>
                 </div>
 
-                {/* Borde sutil animado (Ring) */}
                 <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-white/5 group-hover:ring-white/20 transition-all duration-500" />
               </article>
             );

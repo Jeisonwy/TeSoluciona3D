@@ -1,5 +1,6 @@
 ﻿import { useEffect, useRef, useState } from "react";
-import { Menu, X, LogIn } from "lucide-react";
+import { Menu, X } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -7,6 +8,9 @@ export default function Navbar() {
 
   const lastScrollY = useRef(0);
   const ticking = useRef(false);
+
+  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!open) return;
@@ -41,12 +45,26 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Anchors para la landing (scroll) + ruta para products
   const navItems = [
-    { label: "Inicio", href: "#" },
-    { label: "Nosotros", href: "#nosotros" },
-    { label: "Servicios", href: "#servicios" },
-    { label: "Productos", href: "#products" },
+    { label: "Inicio", type: "anchor" as const, href: "#" },
+    { label: "Nosotros", type: "anchor" as const, href: "#nosotros" },
+    { label: "Servicios", type: "anchor" as const, href: "#servicios" },
+    { label: "Productos", type: "route" as const, to: "/products" },
   ];
+
+  const goToAnchor = (href: string) => {
+    // Si estamos en /products, primero volvemos a "/" y luego aplicamos el hash
+    if (location.pathname !== "/") {
+      navigate("/" + href);
+      setOpen(false);
+      return;
+    }
+
+    // Si ya estamos en "/", navega por hash normal
+    window.location.hash = href === "#" ? "" : href;
+    setOpen(false);
+  };
 
   return (
     <>
@@ -75,22 +93,37 @@ export default function Navbar() {
             />
             <span
               className="font-brand text-lg sm:text-xl tracking-[0.06em] leading-none uppercase"
-              style={{ fontFamily: '"Fatal Fighter", system-ui, sans-serif' }}
+              style={{ fontFamily: '"FatalFighter", system-ui, sans-serif' }}
             >
               TESOLUCIONA 3D
             </span>
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
-            {navItems.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="hover:text-rose-400 transition-colors"
-              >
-                {item.label}
-              </a>
-            ))}
+            {navItems.map((item) => {
+              if (item.type === "route") {
+                return (
+                  <Link
+                    key={item.label}
+                    to={item.to}
+                    className="hover:text-rose-400 transition-colors"
+                  >
+                    {item.label}
+                  </Link>
+                );
+              }
+
+              return (
+                <button
+                  key={item.label}
+                  type="button"
+                  onClick={() => goToAnchor(item.href)}
+                  className="hover:text-rose-400 transition-colors"
+                >
+                  {item.label}
+                </button>
+              );
+            })}
           </div>
         </div>
       </nav>
@@ -132,8 +165,11 @@ export default function Navbar() {
                 alt="Logo TESOLUCIONA 3D"
                 className="w-9 h-9 sm:w-10 sm:h-10 shrink-0"
               />
-              <span className="text-sm sm:text-lg font-black italic tracking-tighter text-white truncate">
-                TESOLUCIONA 3D
+              <span
+                className="font-brand text-lg sm:text-xl tracking-[0.06em] leading-none uppercase"
+                style={{ fontFamily: '"FatalFighter", system-ui, sans-serif' }}
+              >
+                TESOLUCIONA3D
               </span>
             </div>
 
@@ -149,27 +185,34 @@ export default function Navbar() {
 
           <div className="px-5 py-6">
             <div className="flex flex-col gap-2 text-slate-200">
-              {navItems.map((item) => (
-                <a
-                  key={item.label}
-                  href={item.href}
-                  onClick={() => setOpen(false)}
-                  className="px-4 py-3 rounded-2xl hover:bg-white/10 transition-colors"
-                >
-                  {item.label}
-                </a>
-              ))}
+              {navItems.map((item) => {
+                if (item.type === "route") {
+                  return (
+                    <Link
+                      key={item.label}
+                      to={item.to}
+                      onClick={() => setOpen(false)}
+                      className="px-4 py-3 rounded-2xl hover:bg-white/10 transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  );
+                }
+
+                return (
+                  <button
+                    key={item.label}
+                    type="button"
+                    onClick={() => goToAnchor(item.href)}
+                    className="text-left px-4 py-3 rounded-2xl hover:bg-white/10 transition-colors"
+                  >
+                    {item.label}
+                  </button>
+                );
+              })}
             </div>
 
-            <div className="mt-6">
-              <button
-                type="button"
-                className="w-full inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white px-5 py-3 rounded-2xl text-sm font-medium transition-all border border-white/10"
-              >
-                <LogIn size={18} />
-                Iniciar Sesión
-              </button>
-            </div>
+            <div className="mt-6"></div>
           </div>
         </div>
       </div>

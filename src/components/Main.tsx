@@ -48,188 +48,239 @@ export default function Main() {
   };
 
   return (
-    <section className="relative pt-14 sm:pt-20 pb-16 sm:pb-24 overflow-hidden">
-      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 overflow-hidden">
-        <div className="absolute top-10 left-1/4 w-[400px] h-[400px] bg-amber-500/20 blur-[120px] rounded-full" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-rose-600/20 blur-[120px] rounded-full" />
-        <div className="absolute top-10 right-1/4 w-[400px] h-[400px] bg-purple-600/20 blur-[120px] rounded-full" />
-      </div>
+    <>
+      <style>{`
+        .btn-smooth-gradient {
+          position: relative;
+          overflow: hidden;
+          z-index: 1;
+          background-color: transparent;
+        }
 
-      <div className="max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid lg:grid-cols-2 gap-10 sm:gap-12 lg:gap-16 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-5 sm:mb-6">
-              <Cpu className="w-3 h-3" />
-              Tecnología de Impresión 3D de vanguardia
-            </div>
+        .btn-smooth-gradient::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 200%;
+          height: 100%;
+          /* EL SECRETO DEL BUCLE INFINITO:
+            La secuencia de 0% a 50% es idéntica a la de 50% a 100%.
+            Cuando el elemento se mueve a -50%, la vista es exactamente igual a la del inicio.
+          */
+          background: linear-gradient(
+            to right, 
+            #f59e0b 0%,     /* Amber */
+            #e11d48 16.6%,   /* Rose */
+            #9333ea 33.3%,   /* Purple */
+            
+            #f59e0b 50%,     /* Amber (Mitad exacta, punto de reinicio invisible) */
+            
+            #e11d48 66.6%,   /* Rose */
+            #9333ea 83.3%,   /* Purple */
+            #f59e0b 100%    /* Amber */
+          );
+          z-index: -1;
+          /* Subimos a 4s para que parezca líquido suave y no luz estroboscópica */
+          animation: smooth-slide 4s linear infinite;
+          transform: translateZ(0);
+          will-change: transform;
+        }
 
-            <h1
-              className="font-brand text-4xl sm:text-5xl md:text-7xl 
-             tracking-[0.08em]
-             leading-[1.05] mb-4 text-white uppercase break-words"
-              style={{ fontFamily: '"Fatal Fighter", system-ui, sans-serif' }}
-            >
-              TESOLUCIONA3D
-            </h1>
+        @keyframes smooth-slide {
+          0% { transform: translate3d(0, 0, 0); }
+          100% { transform: translate3d(-50%, 0, 0); }
+        }
+      `}</style>
 
-            <h2 className="text-xl sm:text-2xl md:text-3xl font-medium text-slate-200 mb-6 sm:mb-8">
-              <span className="text-amber-500">{">>"}</span> Damos forma a tus
-              ideas con tecnología 3D
-            </h2>
+      <section className="relative pt-14 sm:pt-20 pb-16 sm:pb-24 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10 overflow-hidden">
+          <div className="absolute top-10 left-1/4 w-[400px] h-[400px] bg-amber-500/20 blur-[120px] rounded-full" />
+          <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[400px] h-[400px] bg-rose-600/20 blur-[120px] rounded-full" />
+          <div className="absolute top-10 right-1/4 w-[400px] h-[400px] bg-purple-600/20 blur-[120px] rounded-full" />
+        </div>
 
-            <p className="text-base sm:text-lg text-slate-400 leading-relaxed mb-8 sm:mb-10 max-w-xl">
-              Transformamos tus ideas más complejas en piezas reales. Desde
-              prototipos industriales hasta diseños personalizados, llevamos la
-              fabricación digital a tu alcance.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-              <button
-                type="button"
-                className="group w-full sm:w-auto bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:opacity-90 text-white px-5 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-rose-500/25"
-              >
-                Cotizar Proyecto
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-              </button>
-
-              <button
-                type="button"
-                className="w-full sm:w-auto bg-zinc-900/50 hover:bg-zinc-800 text-white border border-white/10 hover:border-white/20 px-5 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
-              >
-                Ver Catálogo
-                <ShoppingBag className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="mt-10 sm:mt-12 flex flex-wrap items-center gap-4 sm:gap-8 border-t border-white/5 pt-6 sm:pt-8">
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  500+
-                </div>
-                <div className="text-xs sm:text-sm text-slate-500">
-                  Proyectos
-                </div>
-              </div>
-              <div className="hidden sm:block w-px h-8 bg-white/10" />
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  24h
-                </div>
-                <div className="text-xs sm:text-sm text-slate-500">
-                  Respuesta
-                </div>
-              </div>
-              <div className="hidden sm:block w-px h-8 bg-white/10" />
-              <div>
-                <div className="text-xl sm:text-2xl font-bold text-white">
-                  99%
-                </div>
-                <div className="text-xs sm:text-sm text-slate-500">
-                  Satisfacción
-                </div>
-              </div>
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
-          >
-            <div className="relative z-10 rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900 p-2">
-              <div className="relative rounded-2xl overflow-hidden">
-                <div className="relative w-full aspect-square">
-                  <AnimatePresence initial={false} custom={dir}>
-                    <motion.img
-                      key={index}
-                      src={images[index]}
-                      alt="Impresión 3D"
-                      referrerPolicy="no-referrer"
-                      className="absolute inset-0 w-full h-full object-cover opacity-90 mix-blend-lighten"
-                      custom={dir}
-                      variants={variants}
-                      initial="enter"
-                      animate="center"
-                      exit="exit"
-                      transition={{ duration: 0.45, ease: "easeOut" }}
-                      draggable={false}
-                    />
-                  </AnimatePresence>
-
-                  <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
-                </div>
-
-                {images.length > 1 && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => go(-1)}
-                      className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/10 backdrop-blur-md"
-                      aria-label="Anterior"
-                    >
-                      <ChevronLeft size={18} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => go(1)}
-                      className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/10 backdrop-blur-md"
-                      aria-label="Siguiente"
-                    >
-                      <ChevronRight size={18} />
-                    </button>
-                  </>
-                )}
-
-                {images.length > 1 && (
-                  <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                    {images.map((_, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => {
-                          setDir(i > index ? 1 : -1);
-                          setIndex(i);
-                        }}
-                        className={`h-2 rounded-full transition-all ${
-                          i === index
-                            ? "w-6 bg-white/80"
-                            : "w-2 bg-white/30 hover:bg-white/50"
-                        }`}
-                        aria-label={`Ir a imagen ${i + 1}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
+        <div className="max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid lg:grid-cols-2 gap-10 sm:gap-12 lg:gap-16 items-center">
             <motion.div
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-              className="hidden sm:block absolute -bottom-6 -left-6 z-20 bg-zinc-900/90 border border-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-xl"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.6 }}
             >
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-rose-500/20 rounded-full flex items-center justify-center border border-rose-500/30">
-                  <Box className="text-rose-400 w-6 h-6" />
-                </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-[10px] sm:text-xs font-bold uppercase tracking-wider mb-5 sm:mb-6">
+                <Cpu className="w-3 h-3" />
+                Tecnología de Impresión 3D de vanguardia
+              </div>
+
+              <h1
+                className="font-brand text-4xl sm:text-5xl md:text-7xl tracking-[0.08em] leading-[1.05] mb-4 text-white uppercase break-words"
+                style={{ fontFamily: '"FatalFighter", system-ui, sans-serif' }}
+              >
+                TESOLUCIONA 3D
+              </h1>
+
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-medium text-slate-200 mb-6 sm:mb-8">
+                <span className="text-amber-500">{">>"}</span> Damos forma a tus
+                ideas con tecnología 3D
+              </h2>
+
+              <p className="text-base sm:text-lg text-slate-400 leading-relaxed mb-8 sm:mb-10 max-w-xl">
+                Transformamos tus ideas más complejas en piezas reales. Desde
+                prototipos industriales hasta diseños personalizados, llevamos
+                la fabricación digital a tu alcance.
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <button
+                  type="button"
+                  className="btn-smooth-gradient group w-full sm:w-auto hover:opacity-90 text-white px-5 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all flex items-center justify-center gap-2 shadow-[0_0_20px_rgba(225,29,72,0.8)]"
+                  onClick={() =>
+                    window.open("http://wa.me/573177248656", "_blank")
+                  }
+                >
+                  Cotizar Proyecto
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+
+                <button
+                  type="button"
+                  className="w-full sm:w-auto bg-zinc-900/50 hover:bg-zinc-800 text-white border border-white/10 hover:border-white/20 px-5 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
+                >
+                  Ver Catálogo
+                  <ShoppingBag className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="mt-10 sm:mt-12 flex flex-wrap items-center gap-4 sm:gap-8 border-t border-white/5 pt-6 sm:pt-8">
                 <div>
-                  <div className="text-sm font-bold text-white">
-                    Calidad Industrial
+                  <div className="text-xl sm:text-2xl font-bold text-white">
+                    500+
                   </div>
-                  <div className="text-xs text-slate-400">
-                    Precisión de micras
+                  <div className="text-xs sm:text-sm text-slate-500">
+                    Proyectos
+                  </div>
+                </div>
+                <div className="hidden sm:block w-px h-8 bg-white/10" />
+                <div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">
+                    24h
+                  </div>
+                  <div className="text-xs sm:text-sm text-slate-500">
+                    Respuesta
+                  </div>
+                </div>
+                <div className="hidden sm:block w-px h-8 bg-white/10" />
+                <div>
+                  <div className="text-xl sm:text-2xl font-bold text-white">
+                    99%
+                  </div>
+                  <div className="text-xs sm:text-sm text-slate-500">
+                    Satisfacción
                   </div>
                 </div>
               </div>
             </motion.div>
-          </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <div className="relative z-10 rounded-3xl overflow-hidden border border-white/10 shadow-2xl bg-zinc-900 p-2">
+                <div className="relative rounded-2xl overflow-hidden">
+                  <div className="relative w-full aspect-square">
+                    <AnimatePresence initial={false} custom={dir}>
+                      <motion.img
+                        key={index}
+                        src={images[index]}
+                        alt="Impresión 3D"
+                        referrerPolicy="no-referrer"
+                        className="absolute inset-0 w-full h-full object-cover opacity-90 mix-blend-lighten"
+                        custom={dir}
+                        variants={variants}
+                        initial="enter"
+                        animate="center"
+                        exit="exit"
+                        transition={{ duration: 0.45, ease: "easeOut" }}
+                        draggable={false}
+                      />
+                    </AnimatePresence>
+
+                    <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent opacity-80" />
+                  </div>
+
+                  {images.length > 1 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => go(-1)}
+                        className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/10 backdrop-blur-md"
+                        aria-label="Anterior"
+                      >
+                        <ChevronLeft size={18} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => go(1)}
+                        className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 p-1.5 sm:p-2 rounded-full bg-black/40 hover:bg-black/60 text-white border border-white/10 backdrop-blur-md"
+                        aria-label="Siguiente"
+                      >
+                        <ChevronRight size={18} />
+                      </button>
+                    </>
+                  )}
+
+                  {images.length > 1 && (
+                    <div className="absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                      {images.map((_, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          onClick={() => {
+                            setDir(i > index ? 1 : -1);
+                            setIndex(i);
+                          }}
+                          className={`h-2 rounded-full transition-all ${
+                            i === index
+                              ? "w-6 bg-white/80"
+                              : "w-2 bg-white/30 hover:bg-white/50"
+                          }`}
+                          aria-label={`Ir a imagen ${i + 1}`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <motion.div
+                animate={{ y: [0, -10, 0] }}
+                transition={{
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+                className="hidden sm:block absolute -bottom-6 -left-6 z-20 bg-zinc-900/90 border border-white/10 p-6 rounded-2xl shadow-xl backdrop-blur-xl"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-rose-500/20 rounded-full flex items-center justify-center border border-rose-500/30">
+                    <Box className="text-rose-400 w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-white">
+                      Calidad Industrial
+                    </div>
+                    <div className="text-xs text-slate-400">
+                      Precisión de micras
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }
