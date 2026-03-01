@@ -121,12 +121,52 @@ export default function Promotions({
 
   useEffect(() => {
     let alive = true;
+    const CACHE_KEY = `promotions_cache_${endpoint}`;
 
     async function run() {
       try {
         setLoading(true);
         setError(null);
 
+        // 1. REVISAR LA CACHÉ PRIMERO
+        const cachedData = sessionStorage.getItem(CACHE_KEY);
+        if (cachedData) {
+          const parsed = JSON.parse(cachedData);
+
+          if (Array.isArray(parsed)) {
+            if (!alive) return;
+
+            // Si hay caché, configuramos el estado y terminamos rápido
+            setPromotions(parsed);
+
+            const firstImgs: Record<string, string> = {};
+            for (const p of parsed) {
+              const imgs = getImages(p);
+              if (imgs[0]) firstImgs[p.id] = imgs[0];
+            }
+            setActiveImgById(firstImgs);
+
+            const main = parsed.find((p) => p.showMainPromotion);
+            if (main) {
+              setMainPromoId(main.id);
+              const seen = oncePerSession
+                ? sessionStorage.getItem(SESSION_KEY)
+                : null;
+              if (!oncePerSession || seen !== "1") {
+                setIsMainModalOpen(true);
+                if (oncePerSession) sessionStorage.setItem(SESSION_KEY, "1");
+              }
+            } else {
+              setMainPromoId(null);
+              setIsMainModalOpen(false);
+            }
+
+            setLoading(false);
+            return; // ¡Salimos aquí si había caché!
+          }
+        }
+
+        // 2. SI NO HAY CACHÉ, CONSULTAR LA API
         const res = await fetch(endpoint, {
           method: "GET",
           headers: { Accept: "application/json" },
@@ -153,6 +193,8 @@ export default function Promotions({
 
         if (!alive) return;
 
+        // Guardamos en la caché para futuras visitas
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
         setPromotions(normalized);
 
         const firstImgs: Record<string, string> = {};
@@ -493,11 +535,13 @@ export default function Promotions({
                 className="grid grid-flow-col auto-cols-[100%] overflow-x-auto snap-x snap-mandatory gap-4 pb-6 pt-2 [-ms-overflow-style:'none'] [scrollbar-width:'none'] [&::-webkit-scrollbar]:hidden w-full"
               >
                 {filtered.map((p) => (
-                  <MobilePromotionCard
-                    promo={p}
-                    activeImg={activeImgById[p.id]}
-                    onOpenMain={() => handleOpenPromo(p)}
-                  />
+                  <div key={p.id}>
+                    <MobilePromotionCard
+                      promo={p}
+                      activeImg={activeImgById[p.id]}
+                      onOpenMain={() => handleOpenPromo(p)}
+                    />
+                  </div>
                 ))}
               </div>
 
@@ -905,10 +949,10 @@ function MainPromotionModal({
 
               {imgs.length > 1 && (
                 <div className="flex gap-2 p-3">
-                  {imgs.map((url) => (
+                  {imgs.map((url, index) => (
                     <button
                       type="button"
-                      key={url}
+                      key={`${index}-${url}`}
                       onClick={() => onSelectImg(url)}
                       className={`h-12 w-12 rounded-xl overflow-hidden border transition-all ${
                         url === activeImg
@@ -960,7 +1004,10 @@ function MainPromotionModal({
                       : "border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20"
                   }`}
                   onClick={() =>
-                    alert(`Interés en promo: ${promo.productName}`)
+                    window.open(
+                      "http://wa.me/573177248656?text=Hola!%20estoy%20interesado%20en%20la%20oferta%20estrella",
+                      "_blank",
+                    )
                   }
                 >
                   ¡Lo quiero!

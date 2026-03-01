@@ -45,25 +45,55 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Anchors para la landing (scroll) + ruta para products
   const navItems = [
     { label: "Inicio", type: "anchor" as const, href: "#" },
-    { label: "Nosotros", type: "anchor" as const, href: "#nosotros" },
+    { label: "Nosotros", type: "route" as const, to: "/nosotros" },
     { label: "Servicios", type: "anchor" as const, href: "#servicios" },
     { label: "Productos", type: "route" as const, to: "/products" },
   ];
 
   const goToAnchor = (href: string) => {
-    // Si estamos en /products, primero volvemos a "/" y luego aplicamos el hash
+    // 1. Si NO estamos en la página principal, navegamos a ella con el hash
     if (location.pathname !== "/") {
       navigate("/" + href);
       setOpen(false);
       return;
     }
 
-    // Si ya estamos en "/", navega por hash normal
-    window.location.hash = href === "#" ? "" : href;
+    // 2. Cerramos el menú móvil (si estaba abierto)
     setOpen(false);
+
+    // 3. Si es "Inicio", forzamos el scroll suave hasta arriba del todo
+    if (href === "#") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      // Limpiamos la URL visualmente
+      window.history.pushState(null, "", "/");
+      return;
+    }
+
+    // 4. Si es otra sección, buscamos el elemento por su ID
+    const targetId = href.replace("#", "");
+    const element = document.getElementById(targetId);
+
+    if (element) {
+      // Calculamos la posición restando el alto aproximado de tu navbar (80px)
+      // para que el navbar no tape el título de la sección
+      const navbarOffset = 80;
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.scrollY - navbarOffset;
+
+      // Forzamos el scroll suave
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: "smooth",
+      });
+
+      // Actualizamos la URL (opcional, pero buena práctica) sin que la página salte
+      window.history.pushState(null, "", href);
+    } else {
+      // Fallback por si el ID no se encuentra
+      window.location.hash = href;
+    }
   };
 
   return (
@@ -87,11 +117,13 @@ export default function Navbar() {
 
           <div className="flex items-center gap-2 sm:gap-3 min-w-0">
             <img
+              onClick={() => navigate("/")}
               src="https://www.appsheet.com/template/gettablefileurl?appName=Imagenes-811224222&tableName=Imagenes&fileName=Imagenes_Images%2FEs5AvbwsBmmAVF8NRIadZS.Img.075115.png"
               alt="Logo TESOLUCIONA 3D"
               className="w-9 h-9 sm:w-12 sm:h-12 shrink-0"
             />
             <span
+              onClick={() => navigate("/")}
               className="font-brand text-lg sm:text-xl tracking-[0.06em] leading-none uppercase"
               style={{ fontFamily: '"FatalFighter", system-ui, sans-serif' }}
             >

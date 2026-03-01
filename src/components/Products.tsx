@@ -1,6 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+function useLoader() {
+  const start = () => {};
+  const stop = () => {};
+  const setStatus = (status: string) => {};
+  return { start, stop, setStatus };
+}
+
 type ApiResponse = {
   success: boolean;
   data: Product[];
@@ -78,35 +85,42 @@ export default function Products({
   const [activeImgById, setActiveImgById] = useState<Record<string, string>>(
     {},
   );
+  const { start, stop, setStatus } = useLoader();
 
   useEffect(() => {
     let alive = true;
-
     const CACHE_KEY = `products_cache_${endpoint}`;
 
     async function run() {
+      start();
+      setStatus("Cargando productos...");
+
       try {
         setLoading(true);
         setError(null);
 
         const cachedData = sessionStorage.getItem(CACHE_KEY);
-
         if (cachedData) {
-          const parsedCache = JSON.parse(cachedData) as Product[];
+          const parsed = JSON.parse(cachedData);
 
-          if (!alive) return;
+          // ✅ si el cache NO es un array, está corrupto o tiene otra estructura
+          if (!Array.isArray(parsed)) {
+            sessionStorage.removeItem(CACHE_KEY);
+          } else {
+            const parsedCache = parsed as Product[];
+            if (!alive) return;
 
-          setProducts(parsedCache);
+            setProducts(parsedCache);
 
-          const firstImgs: Record<string, string> = {};
-          for (const p of parsedCache) {
-            const imgs = getImages(p);
-            if (imgs[0]) firstImgs[p.id] = imgs[0];
+            const firstImgs: Record<string, string> = {};
+            for (const p of parsedCache) {
+              const imgs = getImages(p);
+              if (imgs[0]) firstImgs[p.id] = imgs[0];
+            }
+            setActiveImgById(firstImgs);
+            setLoading(false);
+            return;
           }
-          setActiveImgById(firstImgs);
-          setLoading(false);
-
-          return;
         }
 
         const res = await fetch(endpoint, {
@@ -114,12 +128,9 @@ export default function Products({
           headers: { Accept: "application/json" },
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-        }
+        if (!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
 
         const json = (await res.json()) as ApiResponse;
-
         if (!json?.success || !Array.isArray(json.data)) {
           throw new Error(json?.message || "Respuesta inválida del API");
         }
@@ -137,7 +148,6 @@ export default function Products({
         if (!alive) return;
 
         setProducts(normalized);
-
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
 
         const firstImgs: Record<string, string> = {};
@@ -152,12 +162,16 @@ export default function Products({
       } finally {
         if (!alive) return;
         setLoading(false);
+        setStatus("Iniciando sistema...");
+        stop();
       }
     }
 
     run();
     return () => {
       alive = false;
+      // Si desmonta mientras estaba cargando, aseguramos stop()
+      stop();
     };
   }, [endpoint, onlyActive]);
 
@@ -249,7 +263,9 @@ export default function Products({
       {/* Header / Controles */}
       <div className="flex items-end justify-between gap-6 flex-wrap mb-6">
         <div>
-          <h2 className="text-xl font-semibold">Productos</h2>
+          <h2 className="text-6xl pt-10 pb-10 font-bold tracking-tight">
+            Productos
+          </h2>
           <p className="text-sm opacity-70">
             {loading ? "Cargando..." : `${filtered.length} resultado(s)`}
           </p>
@@ -294,13 +310,13 @@ export default function Products({
                     overflow-hidden
   "
               >
-                {categories.map((c) => {
+                {categories.map((c, index) => {
                   const label = c === "all" ? "Todas las categorías" : c;
                   const isActive = c === category;
 
                   return (
                     <button
-                      key={c}
+                      key={`${c}-${index}`}
                       type="button"
                       onClick={() => {
                         setCategory(c);
@@ -440,14 +456,16 @@ export default function Products({
           <>
             <div className={containerClass}>
               {paged.map((p) => (
-                <ProductCard
-                  product={p}
-                  view={view}
-                  activeImg={activeImgById[p.id]}
-                  onSelectImg={(url) =>
-                    setActiveImgById((prev) => ({ ...prev, [p.id]: url }))
-                  }
-                />
+                <React.Fragment key={p.id}>
+                  <ProductCard
+                    product={p}
+                    view={view}
+                    activeImg={activeImgById[p.id]}
+                    onSelectImg={(url) =>
+                      setActiveImgById((prev) => ({ ...prev, [p.id]: url }))
+                    }
+                  />
+                </React.Fragment>
               ))}
             </div>
 
@@ -532,12 +550,13 @@ function ProductCard({
           </div>
 
           {/* Miniaturas */}
+          {/* Miniaturas */}
           {imgs.length > 1 && (
             <div className="flex gap-2 p-3">
-              {imgs.map((url) => (
+              {imgs.map((url, index) => (
                 <button
                   type="button"
-                  key={url}
+                  key={`${p.id}-${index}`}
                   onClick={() => onSelectImg(url)}
                   className={`h-12 w-12 rounded-xl overflow-hidden border ${
                     url === activeImg

@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Box,
@@ -10,6 +11,8 @@ import {
 } from "lucide-react";
 
 export default function Main() {
+  const navigate = useNavigate(); // <-- Inicializar navigate
+
   const images = useMemo(
     () => [
       "https://www.appsheet.com/template/gettablefileurl?appName=Imagenes-811224222&tableName=Imagenes&fileName=Imagenes_Images%2FXXII3eLMeFHVl7Aqy6FCOy.Img.021225.jpg",
@@ -64,24 +67,17 @@ export default function Main() {
           left: 0;
           width: 200%;
           height: 100%;
-          /* EL SECRETO DEL BUCLE INFINITO:
-            La secuencia de 0% a 50% es idéntica a la de 50% a 100%.
-            Cuando el elemento se mueve a -50%, la vista es exactamente igual a la del inicio.
-          */
           background: linear-gradient(
             to right, 
-            #f59e0b 0%,     /* Amber */
-            #e11d48 16.6%,   /* Rose */
-            #9333ea 33.3%,   /* Purple */
-            
-            #f59e0b 50%,     /* Amber (Mitad exacta, punto de reinicio invisible) */
-            
-            #e11d48 66.6%,   /* Rose */
-            #9333ea 83.3%,   /* Purple */
-            #f59e0b 100%    /* Amber */
+            #f59e0b 0%,
+            #e11d48 16.6%,
+            #9333ea 33.3%,
+            #f59e0b 50%,
+            #e11d48 66.6%,
+            #9333ea 83.3%,
+            #f59e0b 100%
           );
           z-index: -1;
-          /* Subimos a 4s para que parezca líquido suave y no luz estroboscópica */
           animation: smooth-slide 4s linear infinite;
           transform: translateZ(0);
           will-change: transform;
@@ -144,6 +140,7 @@ export default function Main() {
 
                 <button
                   type="button"
+                  onClick={() => navigate("/products")}
                   className="w-full sm:w-auto bg-zinc-900/50 hover:bg-zinc-800 text-white border border-white/10 hover:border-white/20 px-5 sm:px-8 py-3.5 sm:py-4 rounded-xl font-bold text-base sm:text-lg transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
                 >
                   Ver Catálogo

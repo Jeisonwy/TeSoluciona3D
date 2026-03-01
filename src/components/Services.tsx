@@ -1,4 +1,5 @@
 import { ArrowRight, Wrench, Zap, Boxes } from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function Services() {
   const services = [
@@ -6,7 +7,7 @@ export default function Services() {
       title: "Modelado e Impresión 3D",
       desc: "Prototipos, piezas personalizadas y producción corta con alta precisión.",
       icon: Boxes,
-      href: "#servicios-impresion",
+      to: "/servicios/impresion-3d",
       image:
         "https://www.appsheet.com/template/gettablefileurl?appName=Imagenes-811224222&tableName=Imagenes&fileName=Imagenes_Images%2FwA03nd5xRmMAIOJD8SEpa5.Img.054206.jpg",
       accent: "from-amber-500/30 via-rose-500/20 to-purple-600/20",
@@ -15,7 +16,7 @@ export default function Services() {
       title: "Corte y grabado láser",
       desc: "Cortes limpios y grabados premium en acrílico, madera y más.",
       icon: Zap,
-      href: "#servicios-laser",
+      to: "/servicios/laser",
       image:
         "https://www.appsheet.com/template/gettablefileurl?appName=Imagenes-811224222&tableName=Imagenes&fileName=Imagenes_Images%2F52BaACqZWTHHjDRp8NCuKn.Img.054338.jpg",
       accent: "from-sky-500/25 via-indigo-500/15 to-purple-600/20",
@@ -24,12 +25,13 @@ export default function Services() {
       title: "Mantenimiento de impresoras",
       desc: "Diagnóstico, calibración y repuestos para dejar tu máquina como nueva.",
       icon: Wrench,
-      href: "#servicios-mantenimiento",
+      to: "/servicios/mantenimiento",
       image:
         "https://www.appsheet.com/template/gettablefileurl?appName=Imagenes-811224222&tableName=Imagenes&fileName=Imagenes_Images%2FzExjDBOx30i9CiTtbZop9C.Img.054620.jpg",
       accent: "from-emerald-500/20 via-cyan-500/15 to-slate-500/10",
     },
   ];
+
   return (
     <section id="servicios" className="relative w-full overflow-hidden py-16">
       <div className="relative z-10 max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8">
@@ -100,8 +102,8 @@ export default function Services() {
                     {s.desc}
                   </p>
 
-                  <a
-                    href={s.href}
+                  <Link
+                    to={s.to}
                     className="mt-auto inline-flex items-center justify-center gap-2 w-full rounded-xl px-5 py-4 font-bold text-sm bg-white/5 hover:bg-white/10 text-white border border-white/10 transition-all group-hover:border-white/20"
                   >
                     Saber más{" "}
@@ -109,7 +111,7 @@ export default function Services() {
                       size={18}
                       className="transition-transform duration-300 group-hover:translate-x-1"
                     />
-                  </a>
+                  </Link>
                 </div>
 
                 <div className="pointer-events-none absolute inset-0 rounded-3xl ring-1 ring-white/5 group-hover:ring-white/20 transition-all duration-500" />

@@ -39,7 +39,6 @@ export default function InteractiveGlow({
       });
     };
 
-    // ¡Aquí está la magia! Cambiamos 'el' por 'window'
     window.addEventListener("pointermove", onMove);
     return () => {
       window.removeEventListener("pointermove", onMove);
