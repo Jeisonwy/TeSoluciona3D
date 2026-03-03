@@ -83,7 +83,7 @@ if (!container) throw new Error("Root container #root not found");
 createRoot(container).render(
   <StrictMode>
     <HelmetProvider>
-      <BrowserRouter basename="/TeSoluciona3D">
+      <BrowserRouter basename="/">
         <ScrollToTop />
         <Loader>
           <Routes>
