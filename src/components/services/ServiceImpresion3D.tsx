@@ -31,9 +31,9 @@ export default function ServiceImpresion3D() {
                 Servicio Especializado
               </p>
 
-              <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase">
+              <h1 className="text-4xl md:text-6xl font-black italic tracking-tight uppercase pr-2">
                 Impresión{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 inline-block pr-1">
                   3D Profesional
                 </span>
               </h1>
@@ -102,12 +102,19 @@ export default function ServiceImpresion3D() {
               {[
                 "PLA",
                 "PETG",
-                "Resina",
+                "ABS",
+                "TPU",
+                "TPE",
+                "NYLON",
                 "Materiales especiales (según proyecto)",
               ].map((mat) => (
                 <span
                   key={mat}
-                  className="px-6 py-3 rounded-full text-sm font-bold bg-white/5 border border-white/10"
+                  className={`px-6 py-3 rounded-full text-sm font-bold border ${
+                    mat === "Materiales especiales (según proyecto)"
+                      ? "bg-red-500/10 text-red-400 border-red-500/30"
+                      : "bg-white/5 text-white border-white/10"
+                  }`}
                 >
                   {mat}
                 </span>

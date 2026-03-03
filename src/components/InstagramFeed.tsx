@@ -1,5 +1,5 @@
 ﻿export default function InstagramFeedIframe() {
-  const iframeUrl = "https://rss.app/embed/v1/carousel/C9P3bUUHJX45dvB2";
+  const iframeUrl = "https://emb.fouita.com/widget/0x3edf73/ftaqof99o";
 
   return (
     <section className="relative w-full overflow-hidden py-12 md:py-16">
@@ -19,7 +19,7 @@
           <iframe
             src={iframeUrl}
             title="Instagram feed"
-            className="w-full h-[460px] sm:h-[520px] md:h-[600px] bg-zinc-950"
+            className="w-full min-h-[400px] bg-zinc-950"
             loading="lazy"
           />
         </div>

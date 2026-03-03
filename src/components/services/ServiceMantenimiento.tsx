@@ -33,7 +33,7 @@ export default function ServiceMantenimiento() {
 
               <h1 className="text-4xl md:text-6xl font-black italic tracking-tighter uppercase">
                 Mantenimiento y{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-cyan-500 to-slate-400">
+                <span className="inline-block pr-2 text-transparent bg-clip-text bg-gradient-to-r from-emerald-500 via-cyan-500 to-slate-400">
                   Reparación 3D
                 </span>
               </h1>
@@ -76,7 +76,7 @@ export default function ServiceMantenimiento() {
               {[
                 "Diagnóstico completo de hardware y firmware",
                 "Calibración de cama y extrusión",
-                "Ajuste de e-steps y flujo",
+                "Ajuste de steps y flujo",
                 "Limpieza y mantenimiento preventivo",
                 "Revisión de boquillas y sistema de extrusión",
                 "Recomendaciones técnicas para mejor rendimiento",

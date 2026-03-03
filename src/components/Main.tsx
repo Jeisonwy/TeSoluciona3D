@@ -109,10 +109,13 @@ export default function Main() {
               </div>
 
               <h1
-                className="font-brand text-4xl sm:text-5xl md:text-7xl tracking-[0.08em] leading-[1.05] mb-4 text-white uppercase break-words"
-                style={{ fontFamily: '"FatalFighter", system-ui, sans-serif' }}
+                className="font-brand tracking-[0.08em] leading-[1.05] mb-4 text-white uppercase break-words"
+                style={{
+                  fontFamily: '"FatalFighter", system-ui, sans-serif',
+                  fontSize: "clamp(2rem, 8vw, 5.5rem)",
+                }}
               >
-                TESOLUCIONA 3D
+                TESOLUCIONA3D
               </h1>
 
               <h2 className="text-xl sm:text-2xl md:text-3xl font-medium text-slate-200 mb-6 sm:mb-8">

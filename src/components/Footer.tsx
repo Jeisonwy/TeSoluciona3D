@@ -10,7 +10,7 @@ export default function Footer() {
             className="font-brand text-lg sm:text-xl tracking-[0.06em] leading-none uppercase"
             style={{ fontFamily: '"FatalFighter", system-ui, sans-serif' }}
           >
-            TESOLUCIONA 3D
+            TESOLUCIONA3D
           </span>
         </div>
 
@@ -24,6 +24,12 @@ export default function Footer() {
             className="hover:text-rose-400 transition-colors"
           >
             Instagram
+          </a>
+          <a
+            href="https://www.tiktok.com/@tesoluciona3d"
+            className="hover:text-rose-400 transition-colors"
+          >
+            Tiktok
           </a>
           <a
             href="https://www.facebook.com/profile.php?id=61553602637861"

@@ -52,49 +52,61 @@ export default function Navbar() {
     { label: "Productos", type: "route" as const, to: "/products" },
   ];
 
-  const goToAnchor = (href: string) => {
-    // 1. Si NO estamos en la página principal, navegamos a ella con el hash
-    if (location.pathname !== "/") {
-      navigate("/" + href);
-      setOpen(false);
-      return;
-    }
-
-    // 2. Cerramos el menú móvil (si estaba abierto)
-    setOpen(false);
-
-    // 3. Si es "Inicio", forzamos el scroll suave hasta arriba del todo
+  const scrollToAnchor = (href: string, smooth = true) => {
     if (href === "#") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      // Limpiamos la URL visualmente
+      window.scrollTo({
+        top: 0,
+        behavior: smooth ? "smooth" : "auto",
+      });
       window.history.pushState(null, "", "/");
       return;
     }
 
-    // 4. Si es otra sección, buscamos el elemento por su ID
     const targetId = href.replace("#", "");
     const element = document.getElementById(targetId);
 
     if (element) {
-      // Calculamos la posición restando el alto aproximado de tu navbar (80px)
-      // para que el navbar no tape el título de la sección
       const navbarOffset = 80;
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.scrollY - navbarOffset;
+      const elementPosition =
+        element.getBoundingClientRect().top + window.scrollY;
+      const offsetPosition = elementPosition - navbarOffset;
 
-      // Forzamos el scroll suave
       window.scrollTo({
         top: offsetPosition,
-        behavior: "smooth",
+        behavior: smooth ? "smooth" : "auto",
       });
 
-      // Actualizamos la URL (opcional, pero buena práctica) sin que la página salte
       window.history.pushState(null, "", href);
-    } else {
-      // Fallback por si el ID no se encuentra
-      window.location.hash = href;
     }
   };
+
+  const goToAnchor = (href: string) => {
+    setOpen(false);
+
+    // Si estamos en otra página, navegamos con hash.
+    // El scroll real lo hará el useEffect cuando la home ya esté renderizada.
+    if (location.pathname !== "/") {
+      navigate("/" + href);
+      return;
+    }
+
+    // Si ya estamos en la home, hacemos scroll directo
+    scrollToAnchor(href, true);
+  };
+
+  useEffect(() => {
+    // Cuando llegamos a la home desde otra ruta con hash (#servicios),
+    // esperamos un frame para asegurar que el DOM ya esté pintado
+    if (location.pathname === "/" && location.hash) {
+      const hash = location.hash;
+
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          scrollToAnchor(hash, true);
+        }, 50);
+      });
+    }
+  }, [location.pathname, location.hash]);
 
   return (
     <>
@@ -120,11 +132,11 @@ export default function Navbar() {
               onClick={() => navigate("/")}
               src="https://www.appsheet.com/template/gettablefileurl?appName=Imagenes-811224222&tableName=Imagenes&fileName=Imagenes_Images%2FEs5AvbwsBmmAVF8NRIadZS.Img.075115.png"
               alt="Logo TESOLUCIONA 3D"
-              className="w-9 h-9 sm:w-12 sm:h-12 shrink-0"
+              className="w-9 h-9 sm:w-12 sm:h-12 shrink-0 cursor-pointer"
             />
             <span
               onClick={() => navigate("/")}
-              className="font-brand text-lg sm:text-xl tracking-[0.06em] leading-none uppercase"
+              className="font-brand text-lg sm:text-xl tracking-[0.06em] leading-none uppercase cursor-pointer"
               style={{ fontFamily: '"FatalFighter", system-ui, sans-serif' }}
             >
               TESOLUCIONA 3D

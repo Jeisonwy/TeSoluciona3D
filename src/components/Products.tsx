@@ -212,6 +212,7 @@ export default function Products({
           .slice()
           .sort((a, b) => a.productName.localeCompare(b.productName));
         break;
+
       case "price_asc":
         list = list
           .slice()
@@ -221,6 +222,7 @@ export default function Products({
               discountedPrice(b.cost, b.discount),
           );
         break;
+
       case "price_desc":
         list = list
           .slice()
@@ -230,8 +232,10 @@ export default function Products({
               discountedPrice(a.cost, a.discount),
           );
         break;
+
       case "relevance":
       default:
+        list = list.slice().reverse();
         break;
     }
 
