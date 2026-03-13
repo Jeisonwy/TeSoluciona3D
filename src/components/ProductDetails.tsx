@@ -1,6 +1,100 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
-import { useLocation, useNavigate, Navigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Product } from "./Products";
+import Breadcrumbs from "./seo/Breadcrumbs";
+import { Seo } from "./seo/Seo";
+
+const PRODUCTS_ENDPOINT = "https://tesoluciona3d.com/api/get_products.php";
+
+export type ProductLookupResult = {
+  product: Product | null;
+  products: Product[];
+};
+
+function normalizeImageUrl(url?: string | null): string {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  if (url.startsWith("/")) return `https://tesoluciona3d.com${url}`;
+  return `https://tesoluciona3d.com/${url}`;
+}
+
+function normalizeProducts(raw: unknown): Product[] {
+  if (!Array.isArray(raw)) return [];
+
+  return raw.map((item) => {
+    const product = item as Product;
+    return {
+      ...product,
+      cost: Number(product.cost) || 0,
+      discount: Number(product.discount) || 0,
+      image_url: product.image_url || "",
+      images: Array.isArray(product.images) ? product.images : [],
+    };
+  });
+}
+
+function getProductImages(product: Product | null): string[] {
+  if (!product) return [];
+
+  if (Array.isArray(product.images) && product.images.length > 0) {
+    return product.images
+      .map((img) => normalizeImageUrl(img.image_url))
+      .filter(Boolean);
+  }
+
+  if (product.image_url) {
+    return [normalizeImageUrl(product.image_url)];
+  }
+
+  return [];
+}
+
+function findProductInSession(productId: string): ProductLookupResult {
+  const cacheKey = `products_cache_${PRODUCTS_ENDPOINT}`;
+  const cachedData = sessionStorage.getItem(cacheKey);
+
+  if (!cachedData) return { product: null, products: [] };
+
+  const products = normalizeProducts(JSON.parse(cachedData));
+  const product =
+    products.find((item) => String(item.id) === String(productId)) || null;
+
+  return { product, products };
+}
+
+async function fetchProductById(
+  productId: string,
+): Promise<ProductLookupResult> {
+  const response = await fetch(PRODUCTS_ENDPOINT, {
+    method: "GET",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+  }
+
+  const json = (await response.json()) as {
+    success?: boolean;
+    data?: unknown;
+  };
+
+  if (!json.success) {
+    return { product: null, products: [] };
+  }
+
+  const products = normalizeProducts(json.data);
+  sessionStorage.setItem(
+    `products_cache_${PRODUCTS_ENDPOINT}`,
+    JSON.stringify(products),
+  );
+
+  return {
+    product:
+      products.find((item) => String(item.id) === String(productId)) || null,
+    products,
+  };
+}
 
 function formatCOP(value: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -80,25 +174,23 @@ function SpaceBg() {
           animation-iteration-count: infinite;
         }
         @keyframes spbg-float {
-          0%,100% { transform: translateY(0)    scale(1); }
-          50%      { transform: translateY(-22px) scale(1.18); }
+          0%,100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-22px) scale(1.18); }
         }
-        /* Rings */
         .spbg-ring { position:absolute; border-radius:50%; border:1px solid; }
-        .spbg-r1 { animation: spbg-spin   11s linear infinite; }
-        .spbg-r2 { animation: spbg-spin   16s linear infinite; border-style:dashed; }
-        .spbg-r3 { animation: spbg-spinr  22s linear infinite; }
-        @keyframes spbg-spin  { to { transform: rotate(360deg); } }
-        @keyframes  spbg-spinr { to { transform: rotate(-360deg); } }
+        .spbg-r1 { animation: spbg-spin 11s linear infinite; }
+        .spbg-r2 { animation: spbg-spin 16s linear infinite; border-style:dashed; }
+        .spbg-r3 { animation: spbg-spinr 22s linear infinite; }
+        @keyframes spbg-spin { to { transform: rotate(360deg); } }
+        @keyframes spbg-spinr { to { transform: rotate(-360deg); } }
         .spbg-orbit {
           position:absolute; border-radius:50%;
           animation: spbg-spin 9s linear infinite;
           transform-origin: 0 0;
         }
-        /* Hex pulse */
         @keyframes spbg-pulse {
           0%,100% { box-shadow:0 0 18px rgba(255,106,0,0.22); }
-          50%      { box-shadow:0 0 52px rgba(255,106,0,0.55); }
+          50% { box-shadow:0 0 52px rgba(255,106,0,0.55); }
         }
       `}</style>
 
@@ -106,10 +198,8 @@ function SpaceBg() {
         ref={ref}
         className="pointer-events-none fixed inset-0 -z-10 overflow-hidden bg-[#060608]"
       >
-        {/* Grid */}
         <div className="spbg-grid absolute inset-0" />
 
-        {/* Orbes parallax */}
         <div
           className="absolute -left-40 -top-40 h-[640px] w-[640px] rounded-full blur-[110px]"
           style={{
@@ -133,7 +223,6 @@ function SpaceBg() {
               "radial-gradient(circle, rgba(0,170,255,0.07) 0%, transparent 70%)",
           }}
         />
-        {/* Extra orb top-right */}
         <div
           className="absolute -top-20 right-1/4 h-[320px] w-[320px] rounded-full blur-[90px]"
           style={{
@@ -143,10 +232,8 @@ function SpaceBg() {
           }}
         />
 
-        {/* Scanline */}
         <div className="spbg-scanline absolute left-0 top-0 h-[2px] w-full" />
 
-        {/* Partículas */}
         {particles.map((p) => (
           <span
             key={p.id}
@@ -163,7 +250,6 @@ function SpaceBg() {
           />
         ))}
 
-        {/* Orbital decoration — bottom right */}
         <div
           className="absolute bottom-[-60px] right-[-60px] h-[380px] w-[380px]"
           style={{
@@ -183,7 +269,6 @@ function SpaceBg() {
             className="spbg-ring spbg-r3 absolute -inset-20"
             style={{ borderColor: "rgba(155,89,182,0.12)" }}
           />
-          {/* Center hex */}
           <div
             className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center border border-[#ff6a00]/40 bg-gradient-to-br from-[#ff6a00]/20 to-[#ee0979]/10"
             style={{
@@ -203,7 +288,7 @@ function SpaceBg() {
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
           </div>
-          {/* Orbit dots */}
+
           {[0, 120, 240].map((deg) => (
             <span
               key={deg}
@@ -243,14 +328,16 @@ function SpaceBg() {
 export default function ProductDetails() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { id = "" } = useParams();
+  const stateProduct = location.state?.product as Product | undefined;
 
-  const product = location.state?.product as Product;
-
+  const [product, setProduct] = useState<Product | null>(
+    stateProduct ? normalizeProducts([stateProduct])[0] : null,
+  );
+  const [lookupState, setLookupState] = useState<
+    "loading" | "ready" | "not_found"
+  >(stateProduct ? "ready" : "loading");
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
-
-  const imgs = product
-    ? ([product.img1, product.img2, product.img3].filter(Boolean) as string[])
-    : [];
   const [activeImg, setActiveImg] = useState<string>("");
 
   const whatsappNumber = "573177248656";
@@ -262,44 +349,238 @@ export default function ProductDetails() {
     comments: "",
   });
 
+  const imgs = useMemo(() => getProductImages(product), [product]);
+
   useEffect(() => {
-    if (product) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      setActiveImg(imgs[0] || "");
-      setFormData((prev) => ({ ...prev, quantity: 1, comments: "" }));
+    let alive = true;
+
+    async function resolveProduct() {
+      if (!id) {
+        if (!alive) return;
+        setProduct(null);
+        setLookupState("not_found");
+        return;
+      }
+
+      if (stateProduct && String(stateProduct.id) === String(id)) {
+        const normalizedStateProduct =
+          normalizeProducts([stateProduct])[0] || null;
+
+        const hasImages =
+          !!normalizedStateProduct?.image_url ||
+          (Array.isArray(normalizedStateProduct?.images) &&
+            normalizedStateProduct.images.length > 0);
+
+        if (hasImages) {
+          if (!alive) return;
+          setProduct(normalizedStateProduct);
+          setLookupState("ready");
+          return;
+        }
+      }
+
+      if (typeof window === "undefined") return;
+
+      setLookupState("loading");
+
+      try {
+        const fromSession = findProductInSession(id);
+        if (fromSession.product) {
+          if (!alive) return;
+          setProduct(fromSession.product);
+          setLookupState("ready");
+          return;
+        }
+
+        const fromApi = await fetchProductById(id);
+        if (!alive) return;
+
+        setProduct(fromApi.product);
+        setLookupState(fromApi.product ? "ready" : "not_found");
+      } catch {
+        if (!alive) return;
+        setProduct(null);
+        setLookupState("not_found");
+      }
     }
-  }, [product?.id]);
+
+    resolveProduct();
+
+    return () => {
+      alive = false;
+    };
+  }, [id, stateProduct]);
 
   useEffect(() => {
     if (!product) return;
-    const cacheKey = Object.keys(sessionStorage).find((key) =>
-      key.startsWith("products_cache_"),
-    );
-    if (cacheKey) {
-      const cachedData = sessionStorage.getItem(cacheKey);
-      if (cachedData) {
-        const allProducts = JSON.parse(cachedData) as Product[];
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    setActiveImg(imgs[0] || "");
+    setFormData((prev) => ({ ...prev, quantity: 1, comments: "" }));
+  }, [product?.id, imgs.length]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function resolveRelatedProducts() {
+      if (!product) return;
+
+      const cacheKey = `products_cache_${PRODUCTS_ENDPOINT}`;
+      let allProducts: Product[] = [];
+
+      try {
+        const cachedData = sessionStorage.getItem(cacheKey);
+
+        if (cachedData) {
+          allProducts = normalizeProducts(JSON.parse(cachedData));
+        } else {
+          const response = await fetch(PRODUCTS_ENDPOINT, {
+            method: "GET",
+            headers: { Accept: "application/json" },
+          });
+
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+          }
+
+          const json = (await response.json()) as {
+            success?: boolean;
+            data?: unknown;
+          };
+
+          if (!json.success) {
+            if (!alive) return;
+            setRelatedProducts([]);
+            return;
+          }
+
+          allProducts = normalizeProducts(json.data);
+          sessionStorage.setItem(cacheKey, JSON.stringify(allProducts));
+        }
+
         let related = allProducts.filter(
-          (p) => p.category === product.category && p.id !== product.id,
+          (p) =>
+            String(p.category) === String(product.category) &&
+            String(p.id) !== String(product.id),
         );
+
         if (related.length < 4) {
           const others = allProducts.filter(
-            (p) => p.category !== product.category && p.id !== product.id,
+            (p) =>
+              String(p.category) !== String(product.category) &&
+              String(p.id) !== String(product.id),
           );
           related = [...related, ...others];
         }
+
+        if (!alive) return;
         setRelatedProducts(related.slice(0, 4));
+      } catch (error) {
+        console.error("Error cargando productos relacionados:", error);
+        if (!alive) return;
+        setRelatedProducts([]);
       }
     }
+
+    resolveRelatedProducts();
+
+    return () => {
+      alive = false;
+    };
   }, [product]);
 
-  if (!product) return <Navigate to="/" replace />;
+  if (lookupState === "loading") {
+    return (
+      <>
+        <SpaceBg />
+        <Seo
+          title="Producto | Tesoluciona3D"
+          description="Cargando detalle del producto en Tesoluciona3D."
+          path={id ? `/producto/${id}` : "/products"}
+          robots="noindex,follow"
+        />
+        <div className="min-h-screen text-white">
+          <div className="mx-auto max-w-6xl px-4 py-10">
+            <Breadcrumbs
+              items={[
+                { label: "Inicio", path: "/" },
+                { label: "Productos", path: "/products" },
+                { label: "Cargando producto" },
+              ]}
+            />
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
+              Cargando detalle del producto...
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+  if (!product) {
+    return (
+      <>
+        <SpaceBg />
+        <Seo
+          title="Producto no disponible | Tesoluciona3D"
+          description="No encontramos ese producto. Explora el catálogo o solicita una cotización personalizada."
+          path={id ? `/producto/${id}` : "/products"}
+          robots="noindex,follow"
+        />
+        <div className="min-h-screen text-white">
+          <div className="mx-auto max-w-6xl px-4 py-10">
+            <Breadcrumbs
+              items={[
+                { label: "Inicio", path: "/" },
+                { label: "Productos", path: "/products" },
+                { label: "Producto no disponible" },
+              ]}
+            />
 
-  const finalPrice = discountedPrice(product.cost, product.discount);
-  const hasDiscount = clampDiscount(product.discount) > 0;
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-8 text-center">
+              <h1 className="text-2xl font-bold text-white">
+                Este producto no está disponible en este momento
+              </h1>
+              <p className="mt-4 text-slate-400">
+                Puedes volver al catálogo o escribirnos para cotizar una pieza
+                personalizada.
+              </p>
+              <div className="mt-6 flex flex-col justify-center gap-3 sm:flex-row">
+                <button
+                  type="button"
+                  onClick={() => navigate("/products")}
+                  className="rounded-xl border border-white/10 px-5 py-3 hover:border-white/20"
+                >
+                  Volver al catálogo
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.open(
+                      "https://wa.me/573177248656?text=Hola,%20quiero%20cotizar%20una%20pieza%20personalizada.",
+                      "_blank",
+                    )
+                  }
+                  className="rounded-xl bg-white px-5 py-3 font-semibold text-black"
+                >
+                  Cotizar por WhatsApp
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const finalPrice = discountedPrice(
+    Number(product.cost) || 0,
+    Number(product.discount) || 0,
+  );
+  const hasDiscount = clampDiscount(Number(product.discount) || 0) > 0;
 
   const handleQuote = (e: React.FormEvent) => {
     e.preventDefault();
+
     const message = `👋 Hola, me interesa cotizar un producto:
 
 *Producto:* ${product.productName} (ID: ${product.id})
@@ -322,9 +603,17 @@ export default function ProductDetails() {
   return (
     <>
       <SpaceBg />
+      <Seo
+        title={`${product.productName} | Tesoluciona3D`}
+        description={
+          product.description ||
+          "Consulta el detalle de este producto y solicita una cotización personalizada."
+        }
+        path={`/producto/${product.id}`}
+        robots="noindex,follow"
+      />
 
       <style>{`
-        /* Corner brackets */
         .card-corner { position:absolute; width:14px; height:14px; pointer-events:none; }
         .cc-tl { top:12px; left:12px; border-top:2px solid rgba(255,106,0,0.4); border-left:2px solid rgba(255,106,0,0.4); }
         .cc-tr { top:12px; right:12px; border-top:2px solid rgba(255,106,0,0.4); border-right:2px solid rgba(255,106,0,0.4); }
@@ -440,7 +729,14 @@ export default function ProductDetails() {
 
       <div className="min-h-screen text-white">
         <div className="mx-auto max-w-6xl px-4 py-10">
-          {/* Back button */}
+          <Breadcrumbs
+            items={[
+              { label: "Inicio", path: "/" },
+              { label: "Productos", path: "/products" },
+              { label: product.productName, path: `/producto/${product.id}` },
+            ]}
+          />
+
           <button
             onClick={() => navigate("/products")}
             className="pd-back-btn mb-8"
@@ -458,7 +754,6 @@ export default function ProductDetails() {
             Volver a productos
           </button>
 
-          {/* Product card */}
           <div className="pd-card mb-14 p-6 sm:p-10">
             <span className="card-corner cc-tl" />
             <span className="card-corner cc-tr" />
@@ -466,7 +761,6 @@ export default function ProductDetails() {
             <span className="card-corner cc-br" />
 
             <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-              {/* Gallery */}
               <div className="flex flex-col gap-4">
                 <div
                   className="relative aspect-square w-full overflow-hidden rounded-2xl border border-white/8"
@@ -483,17 +777,18 @@ export default function ProductDetails() {
                       Sin imagen
                     </div>
                   )}
-                  {/* Corner detail on image */}
                   <span className="card-corner cc-tl" />
                   <span className="card-corner cc-tr" />
                   <span className="card-corner cc-bl" />
                   <span className="card-corner cc-br" />
                 </div>
+
                 {imgs.length > 1 && (
                   <div className="flex gap-3 overflow-x-auto pb-1">
                     {imgs.map((url, i) => (
                       <button
                         key={`${url}-${i}`}
+                        type="button"
                         onClick={() => setActiveImg(url)}
                         className={`h-20 w-20 flex-shrink-0 overflow-hidden rounded-xl border-2 transition ${
                           activeImg === url
@@ -504,7 +799,7 @@ export default function ProductDetails() {
                         <img
                           src={url}
                           className="h-full w-full object-cover"
-                          alt=""
+                          alt={`${product.productName} ${i + 1}`}
                         />
                       </button>
                     ))}
@@ -512,9 +807,7 @@ export default function ProductDetails() {
                 )}
               </div>
 
-              {/* Info + Form */}
               <div className="flex flex-col gap-6">
-                {/* Header */}
                 <div>
                   <div className="mb-3 flex flex-wrap items-center gap-2">
                     <span className="pd-category-tag">
@@ -525,32 +818,30 @@ export default function ProductDetails() {
                       ID: {product.id}
                     </span>
                   </div>
+
                   <h1 className="text-2xl font-extrabold leading-tight tracking-tight sm:text-3xl">
                     {product.productName}
                   </h1>
                 </div>
 
-                {/* Price */}
                 <div className="flex flex-wrap items-end gap-3">
                   <span className="pd-price">{formatCOP(finalPrice)}</span>
                   {hasDiscount && (
                     <>
                       <span className="mb-1 text-lg font-medium text-white/35 line-through">
-                        {formatCOP(product.cost)}
+                        {formatCOP(Number(product.cost) || 0)}
                       </span>
                       <span className="pd-discount-badge">
-                        -{clampDiscount(product.discount)}%
+                        -{clampDiscount(Number(product.discount) || 0)}%
                       </span>
                     </>
                   )}
                 </div>
 
-                {/* Description */}
                 <p className="whitespace-pre-line text-sm leading-relaxed text-white/60">
                   {product.description}
                 </p>
 
-                {/* Quote form */}
                 <form
                   onSubmit={handleQuote}
                   className="pd-form-box flex flex-col gap-4"
@@ -571,9 +862,8 @@ export default function ProductDetails() {
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                      <p className="pd-label">Tu Nombre *</p>
+                      <p className="pd-label">Tu Nombre</p>
                       <input
-                        required
                         type="text"
                         className="pd-input"
                         placeholder="Ej. Juan Pérez"
@@ -583,10 +873,10 @@ export default function ProductDetails() {
                         }
                       />
                     </div>
+
                     <div>
-                      <p className="pd-label">Ciudad *</p>
+                      <p className="pd-label">Ciudad</p>
                       <input
-                        required
                         type="text"
                         className="pd-input"
                         placeholder="Ej. Bogotá"
@@ -609,7 +899,7 @@ export default function ProductDetails() {
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          quantity: parseInt(e.target.value) || 1,
+                          quantity: parseInt(e.target.value, 10) || 1,
                         })
                       }
                     />
@@ -645,7 +935,6 @@ export default function ProductDetails() {
             </div>
           </div>
 
-          {/* Related products */}
           {relatedProducts.length > 0 && (
             <div>
               <div className="mb-6 flex items-center gap-3">
@@ -658,8 +947,20 @@ export default function ProductDetails() {
 
               <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 {relatedProducts.map((p) => {
-                  const pHasDiscount = clampDiscount(p.discount) > 0;
-                  const pFinal = discountedPrice(p.cost, p.discount);
+                  const pHasDiscount =
+                    clampDiscount(Number(p.discount) || 0) > 0;
+                  const pFinal = discountedPrice(
+                    Number(p.cost) || 0,
+                    Number(p.discount) || 0,
+                  );
+
+                  const relatedImage =
+                    Array.isArray(p.images) && p.images.length > 0
+                      ? normalizeImageUrl(p.images[0].image_url)
+                      : p.image_url
+                        ? normalizeImageUrl(p.image_url)
+                        : "";
+
                   return (
                     <div
                       key={p.id}
@@ -672,9 +973,9 @@ export default function ProductDetails() {
                         className="relative aspect-square"
                         style={{ background: "rgba(255,255,255,0.03)" }}
                       >
-                        {p.img1 ? (
+                        {relatedImage ? (
                           <img
-                            src={p.img1}
+                            src={relatedImage}
                             alt={p.productName}
                             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                           />
@@ -683,12 +984,14 @@ export default function ProductDetails() {
                             Sin imagen
                           </div>
                         )}
+
                         {pHasDiscount && (
                           <span className="absolute left-2 top-2 rounded-sm bg-[#ff6a00]/90 px-2 py-0.5 text-[10px] font-bold text-white">
-                            -{clampDiscount(p.discount)}%
+                            -{clampDiscount(Number(p.discount) || 0)}%
                           </span>
                         )}
                       </div>
+
                       <div className="p-4">
                         <p className="mb-2 line-clamp-2 text-sm font-semibold leading-tight text-white/85">
                           {p.productName}
@@ -707,7 +1010,7 @@ export default function ProductDetails() {
                         </span>
                         {pHasDiscount && (
                           <span className="ml-2 text-xs text-white/30 line-through">
-                            {formatCOP(p.cost)}
+                            {formatCOP(Number(p.cost) || 0)}
                           </span>
                         )}
                       </div>

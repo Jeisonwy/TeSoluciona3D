@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="https://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://example.com/</loc>
+  </url>
+  <url>
+    <loc>https://example.com/nosotros</loc>
+  </url>
+  <url>
+    <loc>https://example.com/products</loc>
+  </url>
+  <url>
+    <loc>https://example.com/servicios/impresion-3d</loc>
+  </url>
+  <url>
+    <loc>https://example.com/servicios/laser</loc>
+  </url>
+  <url>
+    <loc>https://example.com/servicios/mantenimiento</loc>
+  </url>
+</urlset>

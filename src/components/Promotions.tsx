@@ -6,20 +6,31 @@ type ApiResponse = {
   message?: string;
 };
 
+type PromotionsCacheEntry = {
+  timestamp: number;
+  data: Promotion[];
+};
+
+type ProductImage = {
+  id: string | number;
+  image_url: string;
+};
+
 export type Promotion = {
   id: string;
-  TypeOfEvent: string;
   productName: string;
   description: string;
   cost: number;
   category: string;
   discount: number;
   timeToDelivery: string;
-  img1?: string;
-  img2?: string;
-  img3?: string;
-  status: boolean;
-  showMainPromotion: boolean;
+  status: string | boolean;
+  TextLabel?: string;
+  color?: string;
+  event_type?: string;
+  show_main_promo?: number | boolean;
+  image_url?: string;
+  images?: ProductImage[];
 };
 
 type SortMode =
@@ -36,10 +47,10 @@ type Props = {
   autoPlayMs?: number;
 };
 
-const DEFAULT_ENDPOINT =
-  "https://script.google.com/macros/s/AKfycbz4qsIjQzuk64K4l9IlZ_qcA0pZVXge5mo7FfJB7gh0F4R5d3qks_Vphe0kcRVLYSQdaA/exec?action=promotions";
+const DEFAULT_ENDPOINT = "/api/get_promotions.php";
 
 const SESSION_KEY = "TESO_MAIN_PROMO_SEEN";
+const CACHE_TTL_MS = 5 * 60 * 1000;
 
 function formatCOP(value: number) {
   return new Intl.NumberFormat("es-CO", {
@@ -59,8 +70,20 @@ function discountedPrice(cost: number, discountPct: number) {
   return Math.round(cost * (1 - d / 100));
 }
 
+function normalizeImageUrl(url?: string) {
+  if (!url) return "";
+  if (url.startsWith("http://") || url.startsWith("https://")) return url;
+  return `${window.location.origin}${url}`;
+}
+
 function getImages(p: Promotion) {
-  return [p.img1, p.img2, p.img3].filter(Boolean) as string[];
+  const gallery = Array.isArray(p.images)
+    ? p.images.map((img) => normalizeImageUrl(img.image_url)).filter(Boolean)
+    : [];
+
+  const cover = p.image_url ? [normalizeImageUrl(p.image_url)] : [];
+
+  return [...new Set([...gallery, ...cover])];
 }
 
 function usePrefersReducedMotion() {
@@ -105,7 +128,7 @@ export default function Promotions({
   const [mainPromoId, setMainPromoId] = useState<string | null>(null);
 
   const globalMainPromo = useMemo(
-    () => promotions.find((p) => p.showMainPromotion),
+    () => promotions.find((p) => p.show_main_promo),
     [promotions],
   );
 
@@ -123,50 +146,67 @@ export default function Promotions({
     let alive = true;
     const CACHE_KEY = `promotions_cache_${endpoint}`;
 
+    function applyPromotionsState(list: Promotion[]) {
+      setPromotions(list);
+
+      const firstImgs: Record<string, string> = {};
+      for (const p of list) {
+        const imgs = getImages(p);
+        if (imgs[0]) firstImgs[p.id] = imgs[0];
+      }
+      setActiveImgById(firstImgs);
+
+      const main = list.find((p) => p.show_main_promo);
+      if (main) {
+        setMainPromoId(main.id);
+        const seen = oncePerSession
+          ? sessionStorage.getItem(SESSION_KEY)
+          : null;
+        if (!oncePerSession || seen !== "1") {
+          setIsMainModalOpen(true);
+          if (oncePerSession) sessionStorage.setItem(SESSION_KEY, "1");
+        }
+      } else {
+        setMainPromoId(null);
+        setIsMainModalOpen(false);
+      }
+    }
+
     async function run() {
       try {
         setLoading(true);
         setError(null);
 
         // 1. REVISAR LA CACHÉ PRIMERO
-        const cachedData = sessionStorage.getItem(CACHE_KEY);
-        if (cachedData) {
-          const parsed = JSON.parse(cachedData);
+        const cachedRaw = sessionStorage.getItem(CACHE_KEY);
+        if (cachedRaw) {
+          try {
+            const parsed = JSON.parse(
+              cachedRaw,
+            ) as Partial<PromotionsCacheEntry>;
+            const hasValidShape =
+              parsed &&
+              typeof parsed === "object" &&
+              Number.isFinite(parsed.timestamp) &&
+              Array.isArray(parsed.data);
 
-          if (Array.isArray(parsed)) {
-            if (!alive) return;
+            if (hasValidShape) {
+              const ageMs = Date.now() - Number(parsed.timestamp);
+              const isFresh = ageMs >= 0 && ageMs < CACHE_TTL_MS;
 
-            // Si hay caché, configuramos el estado y terminamos rápido
-            setPromotions(parsed);
-
-            const firstImgs: Record<string, string> = {};
-            for (const p of parsed) {
-              const imgs = getImages(p);
-              if (imgs[0]) firstImgs[p.id] = imgs[0];
-            }
-            setActiveImgById(firstImgs);
-
-            const main = parsed.find((p) => p.showMainPromotion);
-            if (main) {
-              setMainPromoId(main.id);
-              const seen = oncePerSession
-                ? sessionStorage.getItem(SESSION_KEY)
-                : null;
-              if (!oncePerSession || seen !== "1") {
-                setIsMainModalOpen(true);
-                if (oncePerSession) sessionStorage.setItem(SESSION_KEY, "1");
+              if (isFresh) {
+                if (!alive) return;
+                applyPromotionsState(parsed.data as Promotion[]);
+                setLoading(false);
+                return;
               }
-            } else {
-              setMainPromoId(null);
-              setIsMainModalOpen(false);
             }
-
-            setLoading(false);
-            return; // ¡Salimos aquí si había caché!
+          } catch {
+            // Ignore invalid cache payloads.
           }
+          sessionStorage.removeItem(CACHE_KEY);
         }
 
-        // 2. SI NO HAY CACHÉ, CONSULTAR LA API
         const res = await fetch(endpoint, {
           method: "GET",
           headers: { Accept: "application/json" },
@@ -180,44 +220,28 @@ export default function Promotions({
           throw new Error(json?.message || "Respuesta inválida del API");
         }
 
-        const normalized = json.data
-          .filter((p) => (onlyActive ? Boolean(p.status) === true : true))
-          .map((p) => ({
-            ...p,
-            cost: Number(p.cost) || 0,
-            discount: Number(p.discount) || 0,
-            status: Boolean(p.status),
-            showMainPromotion: Boolean(p.showMainPromotion),
-            TypeOfEvent: String(p.TypeOfEvent ?? ""),
-          }));
+        const normalized = json.data.map((p) => ({
+          ...p,
+          cost: Number(p.cost) || 0,
+          discount: Number(p.discount) || 0,
+          event_type: String(p.event_type ?? ""),
+          show_main_promo:
+            p.show_main_promo === true ||
+            p.show_main_promo === 1 ||
+            String(p.show_main_promo) === "1"
+              ? 1
+              : 0,
+        }));
 
         if (!alive) return;
 
         // Guardamos en la caché para futuras visitas
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(normalized));
-        setPromotions(normalized);
-
-        const firstImgs: Record<string, string> = {};
-        for (const p of normalized) {
-          const imgs = getImages(p);
-          if (imgs[0]) firstImgs[p.id] = imgs[0];
-        }
-        setActiveImgById(firstImgs);
-
-        const main = normalized.find((p) => p.showMainPromotion);
-        if (main) {
-          setMainPromoId(main.id);
-          const seen = oncePerSession
-            ? sessionStorage.getItem(SESSION_KEY)
-            : null;
-          if (!oncePerSession || seen !== "1") {
-            setIsMainModalOpen(true);
-            if (oncePerSession) sessionStorage.setItem(SESSION_KEY, "1");
-          }
-        } else {
-          setMainPromoId(null);
-          setIsMainModalOpen(false);
-        }
+        const cacheEntry: PromotionsCacheEntry = {
+          timestamp: Date.now(),
+          data: normalized,
+        };
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheEntry));
+        applyPromotionsState(normalized);
       } catch (e: any) {
         if (!alive) return;
         setError(e?.message || "Error cargando promociones");
@@ -236,7 +260,7 @@ export default function Promotions({
   const eventOptions = useMemo(() => {
     const set = new Set<string>();
     for (const p of promotions) {
-      if (p.TypeOfEvent) set.add(p.TypeOfEvent);
+      if (p.event_type) set.add(p.event_type);
     }
     return ["all", ...Array.from(set).sort((a, b) => a.localeCompare(b, "es"))];
   }, [promotions]);
@@ -259,11 +283,11 @@ export default function Promotions({
     const q = query.trim().toLowerCase();
 
     let list = promotions.filter((p) => {
-      const inEvent = eventType === "all" ? true : p.TypeOfEvent === eventType;
+      const inEvent = eventType === "all" ? true : p.event_type === eventType;
       if (!inEvent) return false;
       if (!q) return true;
       const hay =
-        `${p.productName} ${p.description} ${p.category} ${p.TypeOfEvent} ${p.id}`.toLowerCase();
+        `${p.productName} ${p.description} ${p.category} ${p.event_type} ${p.id}`.toLowerCase();
       return hay.includes(q);
     });
 
@@ -376,7 +400,7 @@ export default function Promotions({
 
   return (
     <section
-      className="relative max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8"
+      className="relative max-w-[92rem] xl:max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 text-white"
       id="promotions"
     >
       {/* Header / Título / Toggle */}
@@ -424,7 +448,7 @@ export default function Promotions({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Buscar promo..."
-              className="w-full sm:w-64 rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 outline-none transition-shadow focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
+              className="w-full sm:w-64 rounded-xl border border-black/10 dark:border-white/10 bg-gray-800/90 text-white px-3 py-2 outline-none transition-shadow focus:ring-2 focus:ring-black/20 dark:focus:ring-white/20"
             />
 
             {/* 2. Dropdown de Eventos */}
@@ -435,13 +459,13 @@ export default function Promotions({
                   setIsEventOpen((prev) => !prev);
                   setIsSortOpen(false);
                 }}
-                className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 text-left shadow-sm flex items-center justify-between outline-none"
+                className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-gray-800/80 px-3 py-2 text-left shadow-sm flex items-center justify-between outline-none"
               >
                 <span className="truncate">{selectedEventLabel}</span>
                 <span className="opacity-60 text-sm">▼</span>
               </button>
               {isEventOpen && (
-                <div className="absolute z-50 mt-2 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0b1220]/80 backdrop-blur-md shadow-lg overflow-hidden">
+                <div className="absolute z-50 mt-2 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-gray-900/90 backdrop-blur-md shadow-lg overflow-hidden">
                   {eventOptions.map((ev) => (
                     <button
                       key={ev}
@@ -467,13 +491,13 @@ export default function Promotions({
                   setIsSortOpen((prev) => !prev);
                   setIsEventOpen(false);
                 }}
-                className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-3 py-2 text-left shadow-sm flex items-center justify-between outline-none"
+                className="w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-gray-800/80 px-3 py-2 text-left shadow-sm flex items-center justify-between outline-none"
               >
                 <span className="truncate">{selectedSortLabel}</span>
                 <span className="opacity-60 text-sm">▼</span>
               </button>
               {isSortOpen && (
-                <div className="absolute z-50 mt-2 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0b1220]/80 backdrop-blur-md shadow-lg overflow-hidden">
+                <div className="absolute z-50 mt-2 w-full rounded-xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-gray-900/90 backdrop-blur-md shadow-lg overflow-hidden">
                   {sortOptions.map((opt) => (
                     <button
                       key={opt.value}
@@ -564,14 +588,14 @@ export default function Promotions({
                     <button
                       type="button"
                       onClick={goPrev}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 z-30 h-12 w-12 flex items-center justify-center rounded-full bg-white/80 dark:bg-[#0b1220]/80 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-lg hover:scale-105 hover:bg-white dark:hover:bg-[#1a2233] transition-all disabled:opacity-40"
+                      className="absolute left-2 top-1/2 -translate-y-1/2 z-30 h-12 w-12 flex items-center justify-center rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-lg hover:scale-105 hover:bg-white dark:hover:bg-gray-700 transition-all disabled:opacity-40"
                     >
                       ◀
                     </button>
                     <button
                       type="button"
                       onClick={goNext}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 z-30 h-12 w-12 flex items-center justify-center rounded-full bg-white/80 dark:bg-[#0b1220]/80 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-lg hover:scale-105 hover:bg-white dark:hover:bg-[#1a2233] transition-all disabled:opacity-40"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 z-30 h-12 w-12 flex items-center justify-center rounded-full bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border border-black/10 dark:border-white/10 shadow-lg hover:scale-105 hover:bg-white dark:hover:bg-gray-700 transition-all disabled:opacity-40"
                     >
                       ▶
                     </button>
@@ -670,7 +694,7 @@ function MobilePromotionCard({
   const finalPrice = discountedPrice(p.cost, p.discount);
 
   return (
-    <article className="snap-center h-full rounded-3xl overflow-hidden border border-black/10 dark:border-white/10 bg-white dark:bg-[#1a2233] shadow-lg flex flex-col">
+    <article className="snap-center h-full rounded-3xl overflow-hidden border border-white/10 bg-gray-900 shadow-lg flex flex-col text-white">
       <div className="relative aspect-[4/3] bg-black/5 dark:bg-white/5">
         <img
           src={activeImg}
@@ -691,13 +715,13 @@ function MobilePromotionCard({
         </div>
         <div className="mt-4 flex items-end justify-between">
           <div>
-            <p className="font-black text-xl text-blue-600 dark:text-blue-400">
+            <p className="font-black text-xl text-blue-400">
               {formatCOP(finalPrice)}
             </p>
           </div>
           <button
             onClick={onOpenMain}
-            className="bg-black dark:bg-white text-white dark:text-black hover:scale-105 px-4 py-2 rounded-xl text-sm font-medium shadow-md"
+            className="bg-white text-black hover:scale-105 px-4 py-2 rounded-xl text-sm font-medium shadow-md"
           >
             Ver promo
           </button>
@@ -771,7 +795,11 @@ function CarouselPromotionCard({
 
   return (
     <article
-      className={`relative h-full rounded-3xl overflow-hidden border transition-all duration-700 ease-out ${isActive ? "z-20 scale-[1.05] border-blue-500/50 bg-white dark:bg-[#1a2233] shadow-2xl ring-2 ring-blue-500/20 cursor-default" : "z-10 scale-95 border-black/10 dark:border-white/10 bg-white/80 dark:bg-[#0b1220]/60 opacity-75 hover:opacity-100 cursor-pointer"}`}
+      className={`relative h-full rounded-3xl overflow-hidden border transition-all duration-700 ease-out ${
+        isActive
+          ? "z-20 scale-[1.05] border-blue-500/50 bg-gray-800 shadow-2xl ring-2 ring-blue-500/20 cursor-default"
+          : "z-10 scale-95 border-white/10 bg-gray-900/60 opacity-75 hover:opacity-100 cursor-pointer"
+      }`}
       onClick={() => {
         if (!isActive) onFocusMe();
       }}
@@ -804,7 +832,7 @@ function CarouselPromotionCard({
               Precio
             </p>
             <p
-              className={`font-black ${isActive ? "text-xl text-blue-600 dark:text-blue-400" : "text-lg"}`}
+              className={`font-black ${isActive ? "text-xl text-blue-400" : "text-lg"}`}
             >
               {formatCOP(finalPrice)}
             </p>
@@ -815,7 +843,7 @@ function CarouselPromotionCard({
                 e.stopPropagation();
                 onOpenMain();
               }}
-              className="bg-black dark:bg-white text-white dark:text-black hover:scale-105 px-4 py-2 rounded-xl text-sm font-medium transition-transform shadow-md"
+              className="bg-white text-black hover:scale-105 px-4 py-2 rounded-xl text-sm font-medium transition-transform shadow-md"
             >
               Ver promo
             </button>
@@ -841,7 +869,7 @@ function MainPromotionModal({
   const hasDiscount = clampDiscount(promo.discount) > 0;
   const finalPrice = discountedPrice(promo.cost, promo.discount);
 
-  const isSpecial = promo.showMainPromotion;
+  const isSpecial = promo.show_main_promo === 1;
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
@@ -883,7 +911,7 @@ function MainPromotionModal({
         {/* Badge Especial flotando arriba (Ahora sí es libre de salirse) */}
         {isSpecial && (
           <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50">
-            <span className="bg-gradient-to-r from-red-600 to-orange-500 text-white text-[10px] sm:text-xs font-black px-4 sm:px-6 py-1.5 rounded-full shadow-lg uppercase tracking-widest border-2 border-white dark:border-[#0b1220] whitespace-nowrap">
+            <span className="bg-gradient-to-r from-red-600 to-orange-500 text-white text-[10px] sm:text-xs font-black px-4 sm:px-6 py-1.5 rounded-full shadow-lg uppercase tracking-widest border-2 border-white dark:border-gray-900 whitespace-nowrap">
               🔥 Oferta Estrella 🔥
             </span>
           </div>
@@ -891,10 +919,10 @@ function MainPromotionModal({
 
         {/* 2. CAJA INTERIOR VISIBLE: Maneja el fondo, bordes y el scroll interno */}
         <div
-          className={`w-full max-h-[85vh] overflow-y-auto rounded-3xl border shadow-2xl custom-scrollbar ${
+          className={`w-full max-h-[85vh] overflow-y-auto rounded-3xl border shadow-2xl custom-scrollbar text-white transition-colors ${
             isSpecial
-              ? "border-red-500/50 bg-gradient-to-br from-white via-white to-red-50 dark:from-[#0b1220] dark:via-[#0b1220] dark:to-red-900/20 shadow-[0_0_40px_rgba(239,68,68,0.25)]"
-              : "border-white/15 bg-white/90 dark:bg-[#0b1220]/90 backdrop-blur-xl"
+              ? "border-red-500/50 bg-gradient-to-br from-gray-900 via-gray-900 to-red-900/20 shadow-[0_0_40px_rgba(239,68,68,0.25)]"
+              : "border-white/15 bg-gray-900/90 backdrop-blur-xl"
           }`}
         >
           <div
@@ -902,9 +930,9 @@ function MainPromotionModal({
           >
             <div>
               <div
-                className={`text-xs font-medium ${isSpecial ? "text-red-500 dark:text-red-400" : "opacity-70"}`}
+                className={`text-xs font-medium ${isSpecial ? "text-red-600 dark:text-red-400" : "opacity-70"}`}
               >
-                {promo.TypeOfEvent}
+                {promo.event_type}
               </div>
               <h3
                 className={`text-xl font-bold leading-tight mt-1 ${isSpecial ? "text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600 dark:from-red-400 dark:to-orange-400" : ""}`}
@@ -1005,7 +1033,7 @@ function MainPromotionModal({
                   }`}
                   onClick={() =>
                     window.open(
-                      "http://wa.me/573177248656?text=Hola!%20estoy%20interesado%20en%20la%20oferta%20estrella",
+                      "https://wa.me/573177248656?text=Hola!%20estoy%20interesado%20en%20la%20oferta%20estrella",
                       "_blank",
                     )
                   }
