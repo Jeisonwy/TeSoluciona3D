@@ -39,8 +39,8 @@ export const siteConfig: BusinessConfig = {
   phoneHref: "tel:+573177248656",
   whatsappHref:
     "https://wa.me/573177248656?text=Hola,%20quiero%20cotizar%20un%20proyecto%20de%20impresi%C3%B3n%203D.",
-  email: "tesoluciona3d@gmail.com",
-  emailHref: "mailto:tesoluciona3d@gmail.com",
+  email: "contacto@tesoluciona3d.com ",
+  emailHref: "mailto:contacto@tesoluciona3d.com ",
   address: "KRA 32C #35-23, BR Primavera",
   city: "Cali",
   region: "Valle del Cauca",

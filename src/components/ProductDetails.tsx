@@ -4,7 +4,9 @@ import { Product } from "./Products";
 import Breadcrumbs from "./seo/Breadcrumbs";
 import { Seo } from "./seo/Seo";
 
-const PRODUCTS_ENDPOINT = "https://tesoluciona3d.com/api/get_products.php";
+const API_BASE = `${window.location.origin}/api`;
+const PRODUCTS_ENDPOINT = `${API_BASE}/get_products.php`;
+const PRODUCT_ENDPOINT = `${API_BASE}/get_product.php`;
 
 export type ProductLookupResult = {
   product: Product | null;
@@ -65,10 +67,13 @@ function findProductInSession(productId: string): ProductLookupResult {
 async function fetchProductById(
   productId: string,
 ): Promise<ProductLookupResult> {
-  const response = await fetch(PRODUCTS_ENDPOINT, {
-    method: "GET",
-    headers: { Accept: "application/json" },
-  });
+  const response = await fetch(
+    `${PRODUCT_ENDPOINT}?id=${encodeURIComponent(productId)}`,
+    {
+      method: "GET",
+      headers: { Accept: "application/json" },
+    },
+  );
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} - ${response.statusText}`);
@@ -79,20 +84,16 @@ async function fetchProductById(
     data?: unknown;
   };
 
-  if (!json.success) {
+  if (!json.success || !json.data) {
     return { product: null, products: [] };
   }
 
-  const products = normalizeProducts(json.data);
-  sessionStorage.setItem(
-    `products_cache_${PRODUCTS_ENDPOINT}`,
-    JSON.stringify(products),
-  );
+  const normalized = normalizeProducts([json.data]);
+  const product = normalized[0] || null;
 
   return {
-    product:
-      products.find((item) => String(item.id) === String(productId)) || null,
-    products,
+    product,
+    products: product ? [product] : [],
   };
 }
 

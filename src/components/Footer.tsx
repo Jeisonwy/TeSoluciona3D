@@ -153,7 +153,6 @@ export default function Footer() {
 
       <div className="mx-auto mt-10 flex max-w-[92rem] flex-col gap-2 border-t border-white/5 px-4 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 xl:max-w-[100rem]">
         <p>© 2026 Tesoluciona3D. Todos los derechos reservados.</p>
-        <p>SEO local y contacto unificados para Cali, Valle del Cauca.</p>
       </div>
     </footer>
   );
